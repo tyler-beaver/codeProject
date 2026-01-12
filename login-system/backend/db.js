@@ -1,5 +1,12 @@
 /*
-    This code creates a reusable, secure, efficient connection manager that lets your Node backend safely talk to your Supabase PostgresSQL database
+    Sets up and exports a PostgreSQL connection pool using the 'pg' library 
+
+    - Reads the database connection string from environment variables 
+    - Configures SSL for Supabase connections 
+    - Provides a reusable pool for queries throughout the app 
+
+    This file centralizes databae access so routes and other modules 
+    can import the pool without creating new connections each time 
 */
 
 const { pool } = require('pg');
