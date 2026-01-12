@@ -1,9 +1,9 @@
 /*
     Entry point of the backend server 
 
-    - creates and starts the express app 
-    - loads environment variables from .env
-    - configures global middleware (CORS, JSON parsing)
+    - Creates and starts the express app 
+    - Loads environment variables from .env
+    - Configures global middleware (CORS, JSON parsing)
     - Mounts routes (authentication in this case)
     - Listens on a port for incoming HTTP requests 
 
