@@ -1,3 +1,7 @@
+/*
+    This code creates a reusable, secure, efficient connection manager that lets your Node backend safely talk to your Supabase PostgresSQL database
+*/
+
 const { pool } = require('pg');
 
 const pool = new Pool({
