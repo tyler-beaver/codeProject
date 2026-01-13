@@ -29,7 +29,7 @@ function Login({ setToken }) {
         setError('');
 
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+            const res = await axios.post('/api/auth/login', { email, password });
             if (res && res.data && res.data.token) {
                 localStorage.setItem('token', res.data.token);
                 setToken(res.data.token);
