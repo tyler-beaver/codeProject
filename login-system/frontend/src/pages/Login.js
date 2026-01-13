@@ -13,35 +13,70 @@
     subsequent authenticated requests 
 */
 
+// src/pages/Login.js
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-function Login() {
+function Login({ setToken }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        setError('');
+
         try {
             const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
-            console.log('Login successful:', res.data);
-            setError('');
-            localStorage.setItem('token', res.data.token);
+            if (res && res.data && res.data.token) {
+                localStorage.setItem('token', res.data.token);
+                setToken(res.data.token);
+                navigate('/dashboard'); // go to dashboard after login
+            } else {
+                setError('Login failed: no token returned.');
+            }
         } catch (err) {
-            console.error(err.response.data);
-            setError(err.response.data.error);
+            console.error(err);
+            if (err.response && err.response.data && err.response.data.error) {
+                setError(err.response.data.error);
+            } else if (err.message) {
+                setError(err.message);
+            } else {
+                setError('An unknown error occurred.');
+            }
         }
     };
 
     return (
-        <form onSubmit={handleLogin}>
-            <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-            <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
-            <button type="submit">Login</button>
-            {error && <p>{error}</p>}
+        <form onSubmit={handleLogin} style={{ maxWidth: '400px', margin: '20px auto' }}>
+            <h2>Login</h2>
+            <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                style={{ display: 'block', margin: '10px 0', width: '100%', padding: '8px' }}
+            />
+            <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                style={{ display: 'block', margin: '10px 0', width: '100%', padding: '8px' }}
+            />
+            <button
+                type="submit"
+                style={{ padding: '10px 20px', backgroundColor: '#007bff', color: '#fff', border: 'none', cursor: 'pointer' }}
+            >
+                Login
+            </button>
+            {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
         </form>
     );
 }
 
-export default Login; 
+export default Login;
