@@ -19,10 +19,11 @@ const authRoutes = require('./routes/auth');
 
 const app = express();
 
-app.use(cors());
-
+// Middleware
+app.use(cors()); // allow React frontend requests
 app.use(express.json());
 
+// Routes
 app.use('/api/auth', authRoutes);
 
 const PORT = process.env.PORT || 5000;

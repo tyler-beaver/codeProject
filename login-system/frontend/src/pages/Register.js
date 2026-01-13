@@ -21,7 +21,6 @@ function Register() {
     const handleRegister = async (e) => {
         e.preventDefault();
         setError('');
-
         try {
             const res = await axios.post('http://localhost:5000/api/auth/register', {
                 username,
@@ -31,30 +30,30 @@ function Register() {
 
             if (res && res.data) {
                 console.log('User registered:', res.data);
-                navigate('/login'); // go to login page after registration
+                navigate('/login'); 
             } else {
                 setError('Registration failed: no response data from server.');
             }
         } catch (err) {
-            console.error(err);
+            console.error('Axios error:', err);
             if (err.response && err.response.data && err.response.data.error) {
                 setError(err.response.data.error);
             } else if (err.message) {
                 setError(err.message);
             } else {
-                setError('An unknown error occurred.');
+                setError('An unknown error occurred during registration.');
             }
         }
     };
 
     return (
-        <form onSubmit={handleRegister} style={{ maxWidth: '400px', margin: '20px auto' }}>
+        <form onSubmit={handleRegister} style={{ maxWidth: '400px', margin: '0 auto' }}>
             <h2>Register</h2>
             <input
                 type="text"
                 placeholder="Username"
                 value={username}
-                onChange={e => setUsername(e.target.value)}
+                onChange={(e) => setUsername(e.target.value)}
                 required
                 style={{ display: 'block', margin: '10px 0', width: '100%', padding: '8px' }}
             />
@@ -62,7 +61,7 @@ function Register() {
                 type="email"
                 placeholder="Email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 style={{ display: 'block', margin: '10px 0', width: '100%', padding: '8px' }}
             />
@@ -70,13 +69,19 @@ function Register() {
                 type="password"
                 placeholder="Password"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 style={{ display: 'block', margin: '10px 0', width: '100%', padding: '8px' }}
             />
             <button
                 type="submit"
-                style={{ padding: '10px 20px', backgroundColor: '#007bff', color: '#fff', border: 'none', cursor: 'pointer' }}
+                style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#007bff',
+                    color: '#fff',
+                    border: 'none',
+                    cursor: 'pointer',
+                }}
             >
                 Register
             </button>
