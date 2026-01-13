@@ -24,7 +24,7 @@ function Register() {
         e.preventDefault();
         try {
             const res = await axios.post('http://localhost:5000/api/auth/register', { username, email, password}); 
-            console.log('User registered:', res.date); 
+            console.log('User registered:', res.data); 
             setError('');
         } catch (err) {
             console.error(err.response.data);
