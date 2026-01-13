@@ -12,23 +12,23 @@
 */
 
 import React, { useState } from 'react';
-import axios from 'axios'; 
+import axios from 'axios';
 
 function Register() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    
+
     const handleRegister = async (e) => {
         e.preventDefault();
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/register', { username, email, password}); 
-            console.log('User registered:', res.data); 
+            const res = await axios.post('http://localhost:5000/api/auth/register', { username, email, password });
+            console.log('User registered:', res.data);
             setError('');
         } catch (err) {
             console.error(err.response.data);
-            setError(err.response.data.error); 
+            setError(err.response.data.error);
         }
     };
 
@@ -43,5 +43,5 @@ function Register() {
     );
 }
 
-export default Register; 
+export default Register;
 

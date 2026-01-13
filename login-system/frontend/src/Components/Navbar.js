@@ -22,7 +22,7 @@ function Navbar({ token, setToken }) {
 
     const handleLogout = () => {
         localStorage.removeItem('tokn');
-        setToken(null); 
+        setToken(null);
         navigate('/login');
     };
 
