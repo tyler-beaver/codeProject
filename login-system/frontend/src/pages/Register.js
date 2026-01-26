@@ -47,47 +47,152 @@ function Register() {
     };
 
     return (
-        <form onSubmit={handleRegister} style={{ maxWidth: '400px', margin: '0 auto' }}>
-            <h2>Register</h2>
-            <input
-                type="text"
-                placeholder="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                style={{ display: 'block', margin: '10px 0', width: '100%', padding: '8px' }}
-            />
-            <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                style={{ display: 'block', margin: '10px 0', width: '100%', padding: '8px' }}
-            />
-            <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={{ display: 'block', margin: '10px 0', width: '100%', padding: '8px' }}
-            />
-            <button
-                type="submit"
-                style={{
-                    padding: '10px 20px',
-                    backgroundColor: '#007bff',
-                    color: '#fff',
-                    border: 'none',
-                    cursor: 'pointer',
-                }}
-            >
-                Register
-            </button>
-            {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
-        </form>
+        <div style={styles.container}>
+            <div style={styles.formCard}>
+                <h1 style={styles.title}>Create Account</h1>
+                <p style={styles.subtitle}>Join our platform today</p>
+                
+                <form onSubmit={handleRegister} style={styles.form}>
+                    <div style={styles.formGroup}>
+                        <label style={styles.label}>Username</label>
+                        <input
+                            type="text"
+                            placeholder="Choose a username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            required
+                            style={styles.input}
+                        />
+                    </div>
+                    
+                    <div style={styles.formGroup}>
+                        <label style={styles.label}>Email</label>
+                        <input
+                            type="email"
+                            placeholder="Enter your email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            style={styles.input}
+                        />
+                    </div>
+                    
+                    <div style={styles.formGroup}>
+                        <label style={styles.label}>Password</label>
+                        <input
+                            type="password"
+                            placeholder="Create a password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            style={styles.input}
+                        />
+                    </div>
+                    
+                    {error && <div style={styles.errorBox}>{error}</div>}
+                    
+                    <button
+                        type="submit"
+                        style={styles.submitButton}
+                    >
+                        Create Account
+                    </button>
+                </form>
+                
+                <p style={styles.footerText}>
+                    Already have an account? <a href="/login" style={styles.link}>Sign in</a>
+                </p>
+            </div>
+        </div>
     );
 }
+
+const styles = {
+    container: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 'calc(100vh - 60px)',
+        background: 'linear-gradient(135deg, #f0f2f5 0%, #ffffff 100%)',
+        padding: '20px',
+    },
+    formCard: {
+        background: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+        padding: '60px 50px',
+        maxWidth: '450px',
+        width: '100%',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif',
+    },
+    title: {
+        fontSize: '2rem',
+        fontWeight: 700,
+        color: '#000000',
+        margin: '0 0 8px 0',
+    },
+    subtitle: {
+        fontSize: '0.95rem',
+        color: '#65676b',
+        margin: '0 0 32px 0',
+    },
+    form: {
+        marginBottom: '24px',
+    },
+    formGroup: {
+        marginBottom: '20px',
+    },
+    label: {
+        display: 'block',
+        fontSize: '0.9rem',
+        fontWeight: 600,
+        color: '#000000',
+        marginBottom: '8px',
+    },
+    input: {
+        width: '100%',
+        padding: '12px 14px',
+        fontSize: '1rem',
+        border: '1px solid #cce7ff',
+        borderRadius: '6px',
+        boxSizing: 'border-box',
+        fontFamily: 'inherit',
+        transition: 'border-color 0.3s ease',
+        outline: 'none',
+    },
+    errorBox: {
+        background: '#fee',
+        border: '1px solid #fcc',
+        color: '#d32f2f',
+        padding: '12px 14px',
+        borderRadius: '6px',
+        marginBottom: '20px',
+        fontSize: '0.9rem',
+    },
+    submitButton: {
+        width: '100%',
+        padding: '12px 20px',
+        fontSize: '1rem',
+        fontWeight: 600,
+        background: '#0a66c2',
+        color: 'white',
+        border: 'none',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+    },
+    footerText: {
+        textAlign: 'center',
+        fontSize: '0.9rem',
+        color: '#65676b',
+        margin: 0,
+    },
+    link: {
+        color: '#0a66c2',
+        textDecoration: 'none',
+        fontWeight: 600,
+        cursor: 'pointer',
+    },
+};
 
 export default Register;
