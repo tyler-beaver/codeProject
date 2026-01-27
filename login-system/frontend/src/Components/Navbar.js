@@ -10,6 +10,10 @@ function Navbar({ token, setToken }) {
         navigate('/');
     };
 
+    const handleProfileClick = () => {
+        navigate('/profile');
+    };
+
     return (
         <nav style={styles.navbar}>
             <div style={styles.navContainer}>
@@ -18,8 +22,12 @@ function Navbar({ token, setToken }) {
                     <span style={{letterSpacing: '1px'}}>JobTracker</span>
                 </Link>
                 <div style={styles.navLinks}>
-                    <Link to="/" style={styles.navLink} onMouseEnter={e => e.target.style.color = '#2563eb'} onMouseLeave={e => e.target.style.color = '#4b5563'}>Home</Link>
-                    {token && <Link to="/dashboard" style={styles.navLink} onMouseEnter={e => e.target.style.color = '#2563eb'} onMouseLeave={e => e.target.style.color = '#4b5563'}>Dashboard</Link>}
+                    {!token && (
+                        <Link to="/" style={styles.navLink} onMouseEnter={e => e.target.style.color = '#2563eb'} onMouseLeave={e => e.target.style.color = '#4b5563'}>Home</Link>
+                    )}
+                    {token && (
+                        <Link to="/dashboard" style={styles.navLink} onMouseEnter={e => e.target.style.color = '#2563eb'} onMouseLeave={e => e.target.style.color = '#4b5563'}>Dashboard</Link>
+                    )}
                     {!token && (
                         <>
                             <Link to="/login" style={styles.navLink} onMouseEnter={e => e.target.style.color = '#2563eb'} onMouseLeave={e => e.target.style.color = '#4b5563'}>Sign In</Link>
@@ -28,7 +36,7 @@ function Navbar({ token, setToken }) {
                     )}
                     {token && (
                         <>
-                            <span style={styles.avatar} title="Profile">
+                            <span style={styles.avatar} title="Profile" onClick={handleProfileClick} tabIndex={0} role="button" aria-label="Profile">
                                 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <circle cx="16" cy="16" r="16" fill="#2563eb"/>
                                     <circle cx="16" cy="13" r="6" fill="#fff"/>

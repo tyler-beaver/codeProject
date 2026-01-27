@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
 
 function App() {
     const [token, setToken] = useState(localStorage.getItem('token') || null);
@@ -22,6 +23,7 @@ function App() {
                 <Route path="/login" element={<Login setToken={setToken} />} />
                 <Route path="/" element={<Home />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile" element={<Profile />} />
             </Routes>
         </Router>
     );

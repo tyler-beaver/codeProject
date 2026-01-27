@@ -65,4 +65,29 @@ router.post('/login', async (req, res) => {
     }
 });
 
+
+// Middleware to verify JWT and attach user to request
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token provided' });
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) return res.status(403).json({ error: 'Invalid token' });
+        req.user = user;
+        next();
+    });
+}
+
+// GET /api/auth/profile - get current user's profile
+router.get('/profile', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT id, username, email, created_at FROM users WHERE id=$1', [req.user.id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        res.json({ user: result.rows[0] });
+    } catch (err) {
+        console.error('Profile fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch profile' });
+    }
+});
+
 module.exports = router;

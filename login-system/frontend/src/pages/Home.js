@@ -76,22 +76,7 @@ function Home({ token }) {
                 </div>
             </section>
 
-            <section style={styles.stats}>
-                <div style={styles.statItem}>
-                    <div style={styles.statNumber}>4.9/5</div>
-                    <div style={styles.statLabel}>User Rating</div>
-                </div>
-                <div style={styles.statDivider}></div>
-                <div style={styles.statItem}>
-                    <div style={styles.statNumber}>1000s</div>
-                    <div style={styles.statLabel}>Applications Managed</div>
-                </div>
-                <div style={styles.statDivider}></div>
-                <div style={styles.statItem}>
-                    <div style={styles.statNumber}>#1</div>
-                    <div style={styles.statLabel}>Simplicity & Speed</div>
-                </div>
-            </section>
+            {/* Stats section removed for authenticity */}
 
             <section style={styles.ctaSection}>
                 <h2 style={styles.ctaTitle}>Ready to land your next job?</h2>
