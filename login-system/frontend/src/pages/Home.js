@@ -1,57 +1,104 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-function Home() {
-    const [hoveredCard, setHoveredCard] = useState(null);
+function Home({ token }) {
+    const navigate = useNavigate();
 
-    const features = [
-        { id: 1, icon: '🔐', title: 'Secure', description: 'Enterprise-grade security for your data' },
-        { id: 2, icon: '⚡', title: 'Fast', description: 'Lightning-quick performance and response times' },
-        { id: 3, icon: '🌍', title: 'Global', description: 'Connect with users worldwide instantly' },
-        { id: 4, icon: '📊', title: 'Analytics', description: 'Real-time insights and detailed reporting' },
-    ];
+    React.useEffect(() => {
+        if (token) {
+            navigate('/dashboard');
+        }
+    }, [token, navigate]);
+
+    const handleGetStarted = () => {
+        if (token) {
+            navigate('/dashboard');
+        } else {
+            navigate('/register');
+        }
+    };
 
     return (
         <div style={styles.container}>
-            {/* Hero Section */}
-            <section style={styles.heroSection}>
+            <section style={styles.hero}>
                 <div style={styles.heroContent}>
-                    <h1 style={styles.mainTitle}>Welcome to Your Platform</h1>
+                    <h1 style={styles.heroTitle}>Job Search, Simplified</h1>
                     <p style={styles.heroSubtitle}>
-                        Connect, create, and collaborate with a modern platform built for the future
+                        Track, organize, and win your next job. All your applications, notes, and reminders in one beautiful, easy-to-use dashboard.
                     </p>
-                    <button style={styles.primaryButton}>Explore Dashboard</button>
+                    <button style={styles.ctaButton} onClick={handleGetStarted} onMouseEnter={e => e.target.style.background = '#2563eb'} onMouseLeave={e => e.target.style.background = '#3b82f6'}>
+                        {token ? 'Go to Dashboard' : 'Get Started Free'}
+                    </button>
+                    <p style={styles.heroSmallText}>No credit card required. Get started in seconds.</p>
                 </div>
-            </section>
-
-            {/* Features Section */}
-            <section style={styles.featuresSection}>
-                <h2 style={styles.sectionTitle}>Why Choose Us</h2>
-                <div style={styles.featuresGrid}>
-                    {features.map((feature) => (
-                        <div
-                            key={feature.id}
-                            style={{
-                                ...styles.featureCard,
-                                ...(hoveredCard === feature.id ? styles.featureCardHover : {}),
-                            }}
-                            onMouseEnter={() => setHoveredCard(feature.id)}
-                            onMouseLeave={() => setHoveredCard(null)}
-                        >
-                            <div style={styles.iconContainer}>{feature.icon}</div>
-                            <h3 style={styles.featureTitle}>{feature.title}</h3>
-                            <p style={styles.featureDescription}>{feature.description}</p>
+                <div style={styles.heroImage}>
+                    <div style={styles.mockupCard}>
+                        <div style={styles.mockupHeader}>
+                            <div style={styles.mockupDot}></div>
+                            <div style={styles.mockupDot}></div>
+                            <div style={styles.mockupDot}></div>
                         </div>
-                    ))}
+                        <div style={styles.mockupBody}>
+                            <div style={{...styles.mockupLine, width: '80%', background: '#3b82f6', height: '14px'}} />
+                            <div style={{...styles.mockupLineSmall, width: '60%', background: '#60a5fa'}} />
+                            <div style={{...styles.mockupLine, marginTop: '20px', width: '90%', background: '#0ea5e9'}} />
+                            <div style={{...styles.mockupLineSmall, width: '70%', marginTop: '8px', background: '#38bdf8'}} />
+                            <div style={{...styles.mockupLine, marginTop: '20px', width: '60%', background: '#818cf8'}} />
+                            <div style={{...styles.mockupLineSmall, width: '50%', marginTop: '8px', background: '#a5b4fc'}} />
+                        </div>
+                    </div>
                 </div>
             </section>
 
-            {/* CTA Section */}
-            <section style={styles.ctaSection}>
-                <div style={styles.ctaContent}>
-                    <h2 style={styles.ctaTitle}>Ready to Get Started?</h2>
-                    <p style={styles.ctaSubtitle}>Join thousands of users already using our platform</p>
-                    <button style={styles.secondaryButton}>Create Your First Project</button>
+            <section style={styles.features}>
+                <h2 style={styles.sectionTitle}>Why You'll Love It</h2>
+                <div style={styles.featureGrid}>
+                    <div style={styles.featureCard}>
+                        <div style={styles.featureIcon}>📋</div>
+                        <h3 style={styles.featureTitle}>All-in-One Tracker</h3>
+                        <p style={styles.featureDesc}>Every job, note, and follow-up in one place. No more spreadsheets.</p>
+                    </div>
+                    <div style={styles.featureCard}>
+                        <div style={styles.featureIcon}>📊</div>
+                        <h3 style={styles.featureTitle}>Visual Progress</h3>
+                        <p style={styles.featureDesc}>See your application journey at a glance with clear, modern visuals.</p>
+                    </div>
+                    <div style={styles.featureCard}>
+                        <div style={styles.featureIcon}>🔔</div>
+                        <h3 style={styles.featureTitle}>Never Miss a Beat</h3>
+                        <p style={styles.featureDesc}>Smart reminders keep you on top of every opportunity.</p>
+                    </div>
+                    <div style={styles.featureCard}>
+                        <div style={styles.featureIcon}>⚡</div>
+                        <h3 style={styles.featureTitle}>Fast & Effortless</h3>
+                        <p style={styles.featureDesc}>A clean, intuitive interface that gets out of your way.</p>
+                    </div>
                 </div>
+            </section>
+
+            <section style={styles.stats}>
+                <div style={styles.statItem}>
+                    <div style={styles.statNumber}>4.9/5</div>
+                    <div style={styles.statLabel}>User Rating</div>
+                </div>
+                <div style={styles.statDivider}></div>
+                <div style={styles.statItem}>
+                    <div style={styles.statNumber}>1000s</div>
+                    <div style={styles.statLabel}>Applications Managed</div>
+                </div>
+                <div style={styles.statDivider}></div>
+                <div style={styles.statItem}>
+                    <div style={styles.statNumber}>#1</div>
+                    <div style={styles.statLabel}>Simplicity & Speed</div>
+                </div>
+            </section>
+
+            <section style={styles.ctaSection}>
+                <h2 style={styles.ctaTitle}>Ready to land your next job?</h2>
+                <p style={styles.ctaSubtitle}>Join a growing community of job seekers and get organized today.</p>
+                <button style={styles.ctaButtonLarge} onClick={handleGetStarted} onMouseEnter={e => e.target.style.background = '#2563eb'} onMouseLeave={e => e.target.style.background = '#3b82f6'}>
+                    {token ? 'Open Dashboard' : 'Create Free Account'}
+                </button>
             </section>
         </div>
     );
@@ -60,124 +107,196 @@ function Home() {
 const styles = {
     container: {
         width: '100%',
-        background: '#ffffff',
+        background: '#fff',
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif',
     },
-    heroSection: {
-        minHeight: 'calc(100vh - 60px)',
+    hero: {
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #0a66c2 0%, #0052cc 100%)',
-        color: 'white',
-        textAlign: 'center',
-        padding: '60px 20px',
-    },
-    heroContent: {
-        maxWidth: '800px',
-        animation: 'fadeIn 0.8s ease-in',
-    },
-    mainTitle: {
-        fontSize: '4rem',
-        fontWeight: 700,
-        marginBottom: '24px',
-        lineHeight: 1.2,
-        letterSpacing: '-0.5px',
-    },
-    heroSubtitle: {
-        fontSize: '1.3rem',
-        marginBottom: '40px',
-        opacity: 0.95,
-        lineHeight: 1.6,
-        fontWeight: 400,
-    },
-    primaryButton: {
-        padding: '14px 40px',
-        fontSize: '1rem',
-        fontWeight: 600,
-        background: 'white',
-        color: '#0a66c2',
-        border: 'none',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        transition: 'all 0.3s ease',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    },
-    featuresSection: {
-        padding: '80px 40px',
+        justifyContent: 'space-between',
         maxWidth: '1400px',
         margin: '0 auto',
+        padding: '100px 32px 80px',
+        gap: '60px',
+    },
+    heroContent: {
+        flex: 1,
+    },
+    heroTitle: {
+        fontSize: '4rem',
+        fontWeight: 900,
+        color: '#0f172a',
+        margin: '0 0 20px 0',
+        lineHeight: '1.1',
+        background: 'linear-gradient(135deg, #0f172a 0%, #3b82f6 100%)',
+        backgroundClip: 'text',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+    },
+    heroSubtitle: {
+        fontSize: '1.2rem',
+        color: '#475569',
+        margin: '0 0 32px 0',
+        lineHeight: '1.7',
+        maxWidth: '500px',
+        fontWeight: 400,
+    },
+    heroSmallText: {
+        fontSize: '0.85rem',
+        color: '#94a3b8',
+        margin: '16px 0 0 0',
+    },
+    heroImage: {
+        flex: 1,
+        display: 'flex',
+        justifyContent: 'center',
+    },
+    mockupCard: {
         width: '100%',
+        maxWidth: '420px',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+        borderRadius: '16px',
+        overflow: 'hidden',
+        boxShadow: '0 20px 25px rgba(0, 0, 0, 0.1), 0 8px 12px rgba(0, 0, 0, 0.05)',
+        border: '1px solid #e2e8f0',
+    },
+    mockupHeader: {
+        height: '40px',
+        background: 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)',
+        display: 'flex',
+        gap: '8px',
+        padding: '12px 16px',
+        boxSizing: 'border-box',
+    },
+    mockupDot: {
+        width: '8px',
+        height: '8px',
+        borderRadius: '50%',
+        background: '#cbd5e1',
+    },
+    mockupBody: {
+        padding: '24px',
+    },
+    mockupLine: {
+        height: '10px',
+        background: '#cbd5e1',
+        borderRadius: '6px',
+        marginBottom: '12px',
+    },
+    mockupLineSmall: {
+        height: '8px',
+        background: '#e2e8f0',
+        borderRadius: '4px',
+        marginBottom: '8px',
+    },
+    features: {
+        maxWidth: '1400px',
+        margin: '0 auto',
+        padding: '100px 32px',
+        borderTop: '1px solid #e2e8f0',
     },
     sectionTitle: {
-        fontSize: '2.5rem',
-        fontWeight: 700,
+        fontSize: '2.8rem',
+        fontWeight: 900,
+        color: '#0f172a',
+        margin: '0 0 60px 0',
         textAlign: 'center',
-        marginBottom: '60px',
-        color: '#000000',
     },
-    featuresGrid: {
+    featureGrid: {
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-        gap: '30px',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: '32px',
     },
     featureCard: {
-        padding: '40px 30px',
-        background: '#f0f2f5',
+        padding: '40px 32px',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
         borderRadius: '12px',
         textAlign: 'center',
+        border: '1px solid #e2e8f0',
         transition: 'all 0.3s ease',
         cursor: 'pointer',
-        border: '1px solid #e4e6eb',
     },
-    featureCardHover: {
-        background: '#ffffff',
-        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
-        transform: 'translateY(-8px)',
-        borderColor: '#0a66c2',
-    },
-    iconContainer: {
-        fontSize: '3rem',
+    featureIcon: {
+        fontSize: '3.5rem',
         marginBottom: '20px',
     },
     featureTitle: {
         fontSize: '1.3rem',
-        fontWeight: 600,
-        marginBottom: '12px',
-        color: '#000000',
+        fontWeight: 700,
+        color: '#0f172a',
+        margin: '0 0 12px 0',
     },
-    featureDescription: {
+    featureDesc: {
         fontSize: '0.95rem',
-        color: '#65676b',
-        lineHeight: 1.6,
+        color: '#64748b',
+        margin: 0,
+        lineHeight: '1.6',
     },
-    ctaSection: {
-        background: '#f0f2f5',
-        padding: '80px 40px',
+    stats: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        maxWidth: '1400px',
+        margin: '60px auto',
+        padding: '60px 32px',
+        gap: '60px',
+    },
+    statItem: {
         textAlign: 'center',
     },
-    ctaContent: {
-        maxWidth: '700px',
-        margin: '0 auto',
+    statNumber: {
+        fontSize: '3rem',
+        fontWeight: 900,
+        background: 'linear-gradient(135deg, #0f172a 0%, #3b82f6 100%)',
+        backgroundClip: 'text',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        margin: '0 0 8px 0',
+    },
+    statLabel: {
+        fontSize: '0.95rem',
+        color: '#64748b',
+        fontWeight: 600,
+    },
+    statDivider: {
+        width: '1px',
+        height: '60px',
+        background: '#e2e8f0',
+    },
+    ctaSection: {
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+        padding: '100px 32px',
+        textAlign: 'center',
+        borderTop: '1px solid #e2e8f0',
     },
     ctaTitle: {
-        fontSize: '2.5rem',
-        fontWeight: 700,
-        marginBottom: '20px',
-        color: '#000000',
+        fontSize: '2.8rem',
+        fontWeight: 900,
+        color: '#fff',
+        margin: '0 0 16px 0',
     },
     ctaSubtitle: {
         fontSize: '1.1rem',
-        color: '#65676b',
-        marginBottom: '40px',
-        lineHeight: 1.6,
+        color: '#cbd5e1',
+        margin: '0 0 32px 0',
     },
-    secondaryButton: {
-        padding: '14px 40px',
+    ctaButton: {
+        padding: '14px 36px',
         fontSize: '1rem',
-        fontWeight: 600,
-        background: '#0a66c2',
-        color: 'white',
+        fontWeight: 700,
+        background: '#3b82f6',
+        color: '#fff',
+        border: 'none',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+    },
+    ctaButtonLarge: {
+        padding: '16px 48px',
+        fontSize: '1.05rem',
+        fontWeight: 700,
+        background: '#3b82f6',
+        color: '#fff',
         border: 'none',
         borderRadius: '8px',
         cursor: 'pointer',
