@@ -12,6 +12,53 @@ const router = express.Router();
 const pool = require('../db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const transporter = require('../email');
+// Request password reset (send email)
+router.post('/request-password-reset', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+    try {
+        const userRes = await pool.query('SELECT * FROM users WHERE email=$1', [email]);
+        if (userRes.rows.length === 0) return res.status(400).json({ error: 'User not found' });
+        const user = userRes.rows[0];
+        const token = crypto.randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 1000 * 60 * 30); // 30 min
+        const updateResult = await pool.query(
+            "UPDATE users SET reset_token=$1, reset_token_expires=NOW() + INTERVAL '30 minutes' WHERE id=$2 RETURNING reset_token, reset_token_expires",
+            [token, user.id]
+        );
+        console.log('Reset token update result:', updateResult.rows);
+        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+        await transporter.sendMail({
+            to: email,
+            subject: 'Password Reset',
+            text: `Reset your password: ${resetUrl}`,
+        });
+        res.json({ message: 'Reset email sent' });
+    } catch (err) {
+        console.error('Password reset request error:', err);
+        res.status(500).json({ error: 'Failed to send reset email' });
+    }
+});
+
+// Reset password
+router.post('/reset-password', async (req, res) => {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: 'Token and password required' });
+    try {
+        console.log('Reset request:', { token, password });
+        const userRes = await pool.query('SELECT * FROM users WHERE reset_token=$1 AND reset_token_expires > NOW()', [token]);
+        console.log('User found for reset:', userRes.rows);
+        if (userRes.rows.length === 0) return res.status(400).json({ error: 'Invalid or expired token' });
+        const hashed = await bcrypt.hash(password, 10);
+        await pool.query('UPDATE users SET password_hash=$1, reset_token=NULL, reset_token_expires=NULL WHERE id=$2', [hashed, userRes.rows[0].id]);
+        res.json({ message: 'Password updated' });
+    } catch (err) {
+        console.error('Password reset error:', err);
+        res.status(500).json({ error: 'Failed to reset password' });
+    }
+});
 
 router.post('/register', async (req, res) => {
     const { username, email, password } = req.body;
@@ -89,5 +136,6 @@ router.get('/profile', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch profile' });
     }
 });
+        // Request password reset (send email)
 
 module.exports = router;

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ForgotPassword from '../components/ForgotPassword';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -6,12 +7,12 @@ function Login({ setToken }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [showForgot, setShowForgot] = useState(false);
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
-
         try {
             const res = await axios.post('/api/auth/login', { email, password });
             if (res && res.data && res.data.token) {
@@ -76,6 +77,18 @@ function Login({ setToken }) {
                                 Sign In
                             </button>
                         </form>
+                        <div style={{textAlign: 'right', width: '100%', marginBottom: 12}}>
+                            <button onClick={() => setShowForgot(true)} style={{background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', padding: 0}}>Forgot Password?</button>
+                        </div>
+                        {showForgot && (
+                            <div style={{position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.2)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                <div style={{background: '#fff', borderRadius: 10, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.12)'}}>
+                                    <h3 style={{marginTop: 0}}>Reset your password</h3>
+                                    <ForgotPassword onSent={() => setShowForgot(false)} />
+                                    <button onClick={() => setShowForgot(false)} style={{marginTop: 16, background: '#f1f5f9', border: 'none', borderRadius: 6, padding: '8px 18px', color: '#475569', fontWeight: 700, cursor: 'pointer'}}>Close</button>
+                                </div>
+                            </div>
+                        )}
                         <p style={styles.footer}>
                             Don't have an account? <a href="/register" style={styles.link}>Create one</a>
                         </p>

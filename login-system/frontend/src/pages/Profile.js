@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import ForgotPassword from '../components/ForgotPassword';
 
 function Profile() {
     const [user, setUser] = useState(null);
@@ -34,6 +35,7 @@ function Profile() {
         fetchProfile();
     }, []);
 
+    const [showForgot, setShowForgot] = useState(false);
     return (
         <div style={styles.container}>
             <div style={styles.card}>
@@ -53,7 +55,17 @@ function Profile() {
                             </div>
                             <h2 style={styles.name}>{user.username || user.name}</h2>
                             <p style={styles.email}>{user.email}</p>
+                            <button onClick={() => setShowForgot(true)} style={{marginTop: 16, background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 700, cursor: 'pointer'}}>Reset Password</button>
                         </div>
+                        {showForgot && (
+                            <div style={{position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.2)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                <div style={{background: '#fff', borderRadius: 10, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.12)'}}>
+                                    <h3 style={{marginTop: 0}}>Reset your password</h3>
+                                    <ForgotPassword onSent={() => setShowForgot(false)} />
+                                    <button onClick={() => setShowForgot(false)} style={{marginTop: 16, background: '#f1f5f9', border: 'none', borderRadius: 6, padding: '8px 18px', color: '#475569', fontWeight: 700, cursor: 'pointer'}}>Close</button>
+                                </div>
+                            </div>
+                        )}
                         <div style={styles.infoSection}>
                             <div style={styles.infoRow}>
                                 <span style={styles.infoLabel}>Joined:</span>

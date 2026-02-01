@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
     const [token, setToken] = useState(localStorage.getItem('token') || null);
@@ -24,6 +25,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
             </Routes>
         </Router>
     );
