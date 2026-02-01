@@ -15,6 +15,7 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const enrichRoutes = require('./routes/enrich');
+const applicationsRoutes = require('./routes/applications');
 
 const app = express();
 
@@ -22,9 +23,11 @@ const app = express();
 app.use(cors()); // allow frontend requests
 app.use(express.json());
 
+
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/enrich', enrichRoutes); 
+app.use('/api/enrich', enrichRoutes);
+app.use('/api/applications', applicationsRoutes);
 
 
 // Start server

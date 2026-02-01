@@ -1,19 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
 
 function Dashboard() {
-    // Mock job applications data
-    const [jobs] = useState([
-        { id: 1, company: 'Tech Corp', position: 'Frontend Developer', status: 'Applied', date: '2026-01-20', salary: '$120k-140k' },
-        { id: 2, company: 'StartupXYZ', position: 'Full Stack Engineer', status: 'Interview', date: '2026-01-18', salary: '$100k-130k' },
-        { id: 3, company: 'DataSystems', position: 'Backend Developer', status: 'Rejected', date: '2026-01-15', salary: '$110k-135k' },
-        { id: 4, company: 'WebWorks', position: 'React Developer', status: 'Offer', date: '2026-01-10', salary: '$130k-150k' },
-        { id: 5, company: 'CloudTech', position: 'DevOps Engineer', status: 'Applied', date: '2026-01-08', salary: '$140k-160k' },
-        { id: 6, company: 'InnovateTech', position: 'Senior Frontend Dev', status: 'Applied', date: '2026-01-05', salary: '$150k-170k' },
-        { id: 7, company: 'DataViz Co', position: 'Full Stack Developer', status: 'Interview', date: '2026-01-03', salary: '$125k-145k' },
-    ]);
-
+    // Replace with real user id from auth/session
+    const userId = 1;
+    const [jobs, setJobs] = useState([]);
     const [showAddForm, setShowAddForm] = useState(false);
     const [expandedJob, setExpandedJob] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchJobs() {
+            setLoading(true);
+            try {
+                const res = await axios.get(`/api/applications/user/${userId}`);
+                setJobs(res.data.map(app => ({
+                    id: app.id,
+                    company: app.name,
+                    position: app.description || '',
+                    status: 'Applied', // Default, update if you add status to DB
+                    date: app.created_at ? app.created_at.split('T')[0] : '',
+                    salary: '',
+                })));
+            } catch (err) {
+                setJobs([]);
+            }
+            setLoading(false);
+        }
+        fetchJobs();
+    }, [showAddForm]);
 
     // Calculate statistics
     const stats = {
@@ -66,7 +82,7 @@ function Dashboard() {
             </div>
 
             {/* Add Form */}
-            {showAddForm && <JobForm onClose={() => setShowAddForm(false)} />}
+            {showAddForm && <JobForm onClose={() => setShowAddForm(false)} onAdd={job => setJobs(jobs => [job, ...jobs])} userId={userId} />}
 
             {/* Key Metrics Cards */}
             <div style={styles.metricsGrid}>
@@ -225,24 +241,38 @@ function Dashboard() {
     );
 }
 
-function JobForm({ onClose }) {
+
+function JobForm({ onClose, onAdd, userId }) {
     const [formData, setFormData] = useState({
         company: '',
         position: '',
-        status: 'Applied',
-        salary: '',
     });
-
+    const [submitting, setSubmitting] = useState(false);
     const handleChange = (e) => {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value
         });
     };
-
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onClose();
+        setSubmitting(true);
+        try {
+            const res = await axios.post(`/api/applications/user/${userId}`,
+                { name: formData.company, description: formData.position });
+            onAdd({
+                id: res.data.id,
+                company: res.data.name,
+                position: res.data.description || '',
+                status: 'Applied',
+                date: res.data.created_at ? res.data.created_at.split('T')[0] : '',
+                salary: '',
+            });
+            onClose();
+        } catch (err) {
+            alert('Failed to add application');
+        }
+        setSubmitting(false);
     };
 
     return (
