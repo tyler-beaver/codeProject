@@ -3,11 +3,13 @@ import ForgotPassword from '../components/ForgotPassword';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+
 function Login({ setToken }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [showForgot, setShowForgot] = useState(false);
+    const [showSent, setShowSent] = useState(false);
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
@@ -82,10 +84,20 @@ function Login({ setToken }) {
                         </div>
                         {showForgot && (
                             <div style={{position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.2)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                                <div style={{background: '#fff', borderRadius: 10, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.12)'}}>
+                                <div style={{background: '#fff', borderRadius: 10, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.12)', position: 'relative'}}>
+                                    <button onClick={() => setShowForgot(false)} style={{position: 'absolute', top: 10, right: 14, background: 'none', border: 'none', fontSize: 20, color: '#64748b', cursor: 'pointer', fontWeight: 700, lineHeight: 1}} aria-label="Close">×</button>
                                     <h3 style={{marginTop: 0}}>Reset your password</h3>
-                                    <ForgotPassword onSent={() => setShowForgot(false)} />
-                                    <button onClick={() => setShowForgot(false)} style={{marginTop: 16, background: '#f1f5f9', border: 'none', borderRadius: 6, padding: '8px 18px', color: '#475569', fontWeight: 700, cursor: 'pointer'}}>Close</button>
+                                    <ForgotPassword onSent={() => { setShowForgot(false); setShowSent(true); }} />
+                                </div>
+                            </div>
+                        )}
+                        {showSent && (
+                            <div style={{position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.2)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                <div style={{background: '#fff', borderRadius: 10, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.12)', textAlign: 'center', position: 'relative'}}>
+                                    <button onClick={() => setShowSent(false)} style={{position: 'absolute', top: 10, right: 14, background: 'none', border: 'none', fontSize: 20, color: '#64748b', cursor: 'pointer', fontWeight: 700, lineHeight: 1}} aria-label="Close">×</button>
+                                    <h3 style={{marginTop: 0, color: '#16a34a'}}>Email Sent!</h3>
+                                    <p style={{color: '#475569'}}>If an account exists for that email, a reset link has been sent.</p>
+                                    <button onClick={() => setShowSent(false)} style={{marginTop: 16, background: '#3b82f6', border: 'none', borderRadius: 6, padding: '8px 18px', color: '#fff', fontWeight: 700, cursor: 'pointer'}}>OK</button>
                                 </div>
                             </div>
                         )}

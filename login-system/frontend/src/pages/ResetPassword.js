@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { sharedFont, sharedBox, sharedButton, sharedInput } from '../styles/shared';
 
 function ResetPassword() {
   const params = new URLSearchParams(window.location.search);
@@ -28,16 +29,16 @@ function ResetPassword() {
   if (!token) return <div>Invalid or missing token.</div>;
 
   return (
-    <div style={{maxWidth: 400, margin: '40px auto', padding: 24, background: '#fff', borderRadius: 8}}>
-      <h2>Reset Password</h2>
+    <div style={{...sharedBox, maxWidth: 400, margin: '40px auto', padding: 32}}>
+      <h2 style={{fontFamily: sharedFont}}>Reset Password</h2>
       <form onSubmit={handleSubmit}>
-        <input type="password" placeholder="New password" value={password} onChange={e => setPassword(e.target.value)} required style={{width: '100%', marginBottom: 12, padding: 8}} />
-        <input type="password" placeholder="Confirm password" value={confirm} onChange={e => setConfirm(e.target.value)} required style={{width: '100%', marginBottom: 12, padding: 8}} />
-        <button type="submit" disabled={loading} style={{width: '100%', padding: 10, background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 4}}>
+        <input type="password" placeholder="New password" value={password} onChange={e => setPassword(e.target.value)} required style={sharedInput} />
+        <input type="password" placeholder="Confirm password" value={confirm} onChange={e => setConfirm(e.target.value)} required style={sharedInput} />
+        <button type="submit" disabled={loading} style={sharedButton}>
           {loading ? 'Resetting...' : 'Reset Password'}
         </button>
       </form>
-      {message && <div style={{marginTop: 16, color: message.includes('!') ? 'green' : 'red'}}>{message}</div>}
+      {message && <div style={{marginTop: 16, color: message.includes('!') ? 'green' : 'red', fontFamily: sharedFont}}>{message}</div>}
     </div>
   );
 }

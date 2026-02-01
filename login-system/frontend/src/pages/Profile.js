@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import ForgotPassword from '../components/ForgotPassword';
+// ...existing code...
+import ChangePassword from '../components/ChangePassword';
 
 function Profile() {
     const [user, setUser] = useState(null);
@@ -35,7 +36,9 @@ function Profile() {
         fetchProfile();
     }, []);
 
-    const [showForgot, setShowForgot] = useState(false);
+    // ...existing code...
+    const [showChange, setShowChange] = useState(false);
+    const [showChanged, setShowChanged] = useState(false);
     return (
         <div style={styles.container}>
             <div style={styles.card}>
@@ -55,14 +58,23 @@ function Profile() {
                             </div>
                             <h2 style={styles.name}>{user.username || user.name}</h2>
                             <p style={styles.email}>{user.email}</p>
-                            <button onClick={() => setShowForgot(true)} style={{marginTop: 16, background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 700, cursor: 'pointer'}}>Reset Password</button>
+                            <button onClick={() => setShowChange(true)} style={{marginTop: 16, background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 700, cursor: 'pointer'}}>Change Password</button>
                         </div>
-                        {showForgot && (
+                        {showChange && (
                             <div style={{position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.2)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
                                 <div style={{background: '#fff', borderRadius: 10, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.12)'}}>
-                                    <h3 style={{marginTop: 0}}>Reset your password</h3>
-                                    <ForgotPassword onSent={() => setShowForgot(false)} />
-                                    <button onClick={() => setShowForgot(false)} style={{marginTop: 16, background: '#f1f5f9', border: 'none', borderRadius: 6, padding: '8px 18px', color: '#475569', fontWeight: 700, cursor: 'pointer'}}>Close</button>
+                                    <h3 style={{marginTop: 0}}>Change your password</h3>
+                                    <ChangePassword onClose={() => setShowChange(false)} onSuccess={() => { setShowChange(false); setShowChanged(true); }} />
+                                </div>
+                            </div>
+                        )}
+                        {showChanged && (
+                            <div style={{position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.2)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                <div style={{background: '#fff', borderRadius: 10, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.12)', textAlign: 'center', position: 'relative'}}>
+                                    <button onClick={() => setShowChanged(false)} style={{position: 'absolute', top: 10, right: 14, background: 'none', border: 'none', fontSize: 20, color: '#64748b', cursor: 'pointer', fontWeight: 700, lineHeight: 1}} aria-label="Close">×</button>
+                                    <h3 style={{marginTop: 0, color: '#16a34a'}}>Password Changed!</h3>
+                                    <p style={{color: '#475569'}}>Your password was changed successfully.</p>
+                                    <button onClick={() => setShowChanged(false)} style={{marginTop: 16, background: '#3b82f6', border: 'none', borderRadius: 6, padding: '8px 18px', color: '#fff', fontWeight: 700, cursor: 'pointer'}}>OK</button>
                                 </div>
                             </div>
                         )}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { sharedFont, sharedButton } from '../styles/shared';
 
 function Home({ token }) {
     const navigate = useNavigate();
@@ -19,14 +20,14 @@ function Home({ token }) {
     };
 
     return (
-        <div style={styles.container}>
+        <div style={{...styles.container, fontFamily: sharedFont}}>
             <section style={styles.hero}>
                 <div style={styles.heroContent}>
                     <h1 style={styles.heroTitle}>Job Search, Simplified</h1>
                     <p style={styles.heroSubtitle}>
                         Track, organize, and win your next job. All your applications, notes, and reminders in one beautiful, easy-to-use dashboard.
                     </p>
-                    <button style={styles.ctaButton} onClick={handleGetStarted} onMouseEnter={e => e.target.style.background = '#2563eb'} onMouseLeave={e => e.target.style.background = '#3b82f6'}>
+                    <button style={sharedButton} onClick={handleGetStarted} onMouseEnter={e => e.target.style.background = '#2563eb'} onMouseLeave={e => e.target.style.background = '#3b82f6'}>
                         {token ? 'Go to Dashboard' : 'Get Started Free'}
                     </button>
                     <p style={styles.heroSmallText}>No credit card required. Get started in seconds.</p>
@@ -81,7 +82,7 @@ function Home({ token }) {
             <section style={styles.ctaSection}>
                 <h2 style={styles.ctaTitle}>Ready to land your next job?</h2>
                 <p style={styles.ctaSubtitle}>Join a growing community of job seekers and get organized today.</p>
-                <button style={styles.ctaButtonLarge} onClick={handleGetStarted} onMouseEnter={e => e.target.style.background = '#2563eb'} onMouseLeave={e => e.target.style.background = '#3b82f6'}>
+                <button style={{...sharedButton, padding: '16px 48px', fontSize: '1.05rem'}} onClick={handleGetStarted} onMouseEnter={e => e.target.style.background = '#2563eb'} onMouseLeave={e => e.target.style.background = '#3b82f6'}>
                     {token ? 'Open Dashboard' : 'Create Free Account'}
                 </button>
             </section>

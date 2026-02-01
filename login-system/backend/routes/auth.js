@@ -1,3 +1,50 @@
+const express = require('express');
+const router = express.Router();
+const pool = require('../db');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const transporter = require('../email');
+
+// Change password (authenticated)
+router.post('/change-password', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) {
+        return res.status(400).json({ error: 'Old and new password required' });
+    }
+    try {
+        // Get user
+        const userRes = await pool.query('SELECT * FROM users WHERE id=$1', [userId]);
+        if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        const user = userRes.rows[0];
+        // Check old password
+        const match = await bcrypt.compare(oldPassword, user.password_hash);
+        if (!match) return res.status(400).json({ error: 'Current password is incorrect' });
+        // Get all password hashes from last 60 days
+        const historyRes = await pool.query(
+            `SELECT password_hash FROM password_history WHERE user_id=$1 AND created_at > NOW() - INTERVAL '60 days'`,
+            [userId]
+        );
+        // Also check current password
+        const allHashes = [user.password_hash, ...historyRes.rows.map(r => r.password_hash)];
+        for (const hash of allHashes) {
+            if (await bcrypt.compare(newPassword, hash)) {
+                return res.status(400).json({ error: 'You cannot reuse a recent password' });
+            }
+        }
+        // Hash new password
+        const newHash = await bcrypt.hash(newPassword, 10);
+        // Update user password
+        await pool.query('UPDATE users SET password_hash=$1 WHERE id=$2', [newHash, userId]);
+        // Insert into password history
+        await pool.query('INSERT INTO password_history (user_id, password_hash) VALUES ($1, $2)', [userId, newHash]);
+        res.json({ message: 'Password changed successfully' });
+    } catch (err) {
+        console.error('Change password error:', err);
+        res.status(500).json({ error: 'Failed to change password' });
+    }
+});
 /*
     Authentication routes for the backend
 
@@ -6,14 +53,6 @@
     - Generates JWT tokens for authenticated sessions
     - Interacts with the database via the shared pool (db.js)
 */
-
-const express = require('express');
-const router = express.Router();
-const pool = require('../db');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const transporter = require('../email');
 // Request password reset (send email)
 router.post('/request-password-reset', async (req, res) => {
     const { email } = req.body;
