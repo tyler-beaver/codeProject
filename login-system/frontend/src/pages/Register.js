@@ -21,11 +21,29 @@ function Register() {
         e.preventDefault();
         setError('');
         // Register with Supabase Auth
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) {
-            setError(error.message);
-        } else {
+            // Match any error message that indicates the email is already taken
+            const msg = error.message ? error.message.toLowerCase() : '';
+            if (
+                msg.includes('already registered') ||
+                msg.includes('already exists') ||
+                msg.includes('email already in use') ||
+                msg.includes('user already exists')
+            ) {
+                setError('An account with this email already exists. Please sign in or use a different email.');
+            } else {
+                setError(error.message);
+            }
+            setShowSuccess(false);
+            return;
+        }
+        // Only show success if a user object is returned AND identities array is not empty (new user)
+        if (data && data.user && data.user.identities && data.user.identities.length > 0) {
             setShowSuccess(true);
+        } else {
+            setError('An account with this email already exists. Please sign in or use a different email.');
+            setShowSuccess(false);
         }
     };
 
@@ -90,7 +108,45 @@ function Register() {
                                                                     </span>
                                                                 </div>
                             </div>
-                            {error && <div style={styles.errorBox}>{error}</div>}
+                            {error && (
+                                <div style={{
+                                    position: 'fixed',
+                                    top: '20%',
+                                    left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    background: '#fee2e2',
+                                    color: '#991b1b',
+                                    padding: '18px 28px',
+                                    borderRadius: 12,
+                                    fontSize: '1.05rem',
+                                    border: '2px solid #fecaca',
+                                    zIndex: 3000,
+                                    boxShadow: '0 4px 24px 0 rgba(220,38,38,0.13)',
+                                    minWidth: 260,
+                                    maxWidth: 400,
+                                    textAlign: 'center',
+                                    fontWeight: 600,
+                                }}>
+                                    <span
+                                        onClick={() => setError('')}
+                                        style={{
+                                            position: 'absolute',
+                                            top: 8,
+                                            right: 12,
+                                            cursor: 'pointer',
+                                            fontWeight: 900,
+                                            fontSize: '1.2rem',
+                                            color: '#991b1b',
+                                            background: 'none',
+                                            border: 'none',
+                                        }}
+                                        aria-label="Close error popup"
+                                    >
+                                        ×
+                                    </span>
+                                    {error}
+                                </div>
+                            )}
                             <button type="submit" style={styles.button} onMouseEnter={e => e.target.style.background = '#2563eb'} onMouseLeave={e => e.target.style.background = '#3b82f6'}>
                                 Create Account
                             </button>

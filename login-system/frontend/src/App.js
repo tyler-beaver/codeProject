@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import ResetPassword from './pages/ResetPassword';
+import EmailConfirmed from './pages/EmailConfirmed';
 
 function App() {
     const [token, setToken] = useState(localStorage.getItem('token') || null);
@@ -26,6 +27,7 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/email-confirmed" element={<EmailConfirmed />} />
             </Routes>
         </Router>
     );

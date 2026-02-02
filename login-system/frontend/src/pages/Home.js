@@ -8,6 +8,13 @@ function Home({ token }) {
     React.useEffect(() => {
         if (token) {
             navigate('/dashboard');
+            return;
+        }
+        // Check for redirect_to param in URL
+        const params = new URLSearchParams(window.location.search);
+        const redirectTo = params.get('redirect_to');
+        if (redirectTo && redirectTo.endsWith('/email-confirmed')) {
+            navigate('/email-confirmed', { replace: true });
         }
     }, [token, navigate]);
 
