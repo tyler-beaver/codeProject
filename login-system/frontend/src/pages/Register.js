@@ -2,38 +2,30 @@
  * Registration form for the React frontend
  */
 import React, { useState } from 'react';
-import axios from 'axios';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
 
 
 function Register() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [showSuccess, setShowSuccess] = useState(false);
     const navigate = useNavigate();
 
     const handleRegister = async (e) => {
         e.preventDefault();
         setError('');
-        try {
-            const res = await axios.post('/api/auth/register', {
-                username,
-                email,
-                password,
-            });
-
-            if (res && res.data) {
-                navigate('/login'); 
-            } else {
-                setError('Registration failed: no response data from server.');
-            }
-        } catch (err) {
-            if (err.response && err.response.data && err.response.data.error) {
-                setError(err.response.data.error);
-            } else {
-                setError('Error creating account. Please try again.');
-            }
+        // Register with Supabase Auth
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) {
+            setError(error.message);
+        } else {
+            setShowSuccess(true);
         }
     };
 
@@ -78,16 +70,25 @@ function Register() {
                                     style={styles.input}
                                 />
                             </div>
-                            <div style={styles.formGroup}>
-                                <label style={styles.label}>Password</label>
-                                <input
-                                    type="password"
-                                    placeholder="••••••••"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    style={styles.input}
-                                />
+                                                        <div style={styles.formGroup}>
+                                                                <label style={styles.label}>Password</label>
+                                                                <div style={{ position: 'relative' }}>
+                                                                    <input
+                                                                        type={showPassword ? 'text' : 'password'}
+                                                                        placeholder="••••••••"
+                                                                        value={password}
+                                                                        onChange={(e) => setPassword(e.target.value)}
+                                                                        required
+                                                                        style={styles.input}
+                                                                    />
+                                                                    <span
+                                                                        onClick={() => setShowPassword((v) => !v)}
+                                                                        style={{ position: 'absolute', right: 12, top: 16, cursor: 'pointer' }}
+                                                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                                                    >
+                                                                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                                                    </span>
+                                                                </div>
                             </div>
                             {error && <div style={styles.errorBox}>{error}</div>}
                             <button type="submit" style={styles.button} onMouseEnter={e => e.target.style.background = '#2563eb'} onMouseLeave={e => e.target.style.background = '#3b82f6'}>
@@ -100,6 +101,41 @@ function Register() {
                     </div>
                 </div>
             </div>
+            {showSuccess && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    background: 'rgba(0,0,0,0.18)',
+                    zIndex: 2000,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}>
+                    <div style={{
+                        background: '#fff',
+                        borderRadius: 18,
+                        boxShadow: '0 8px 32px 0 rgba(59,130,246,0.13)',
+                        padding: '48px 48px 36px 48px',
+                        minWidth: 340,
+                        maxWidth: 400,
+                        width: '100%',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif',
+                        position: 'relative',
+                        border: '1.5px solid #e5e7eb',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        textAlign: 'center',
+                    }}>
+                        <h2 style={{marginTop: 0, color: '#16a34a'}}>Account Created!</h2>
+                        <p style={{color: '#475569', marginBottom: 24}}>Please check your email and verify your account before signing in.</p>
+                        <button onClick={() => { setShowSuccess(false); navigate('/login'); }} style={{marginTop: 8, background: '#3b82f6', border: 'none', borderRadius: 8, padding: '10px 24px', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '1.05rem'}}>Go to Login</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

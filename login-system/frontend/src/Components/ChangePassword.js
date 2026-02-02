@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { supabase } from '../supabaseClient';
 
 function ChangePassword({ onClose, onSuccess }) {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -16,22 +20,13 @@ function ChangePassword({ onClose, onSuccess }) {
       return;
     }
     setLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post('/api/auth/change-password', {
-        oldPassword,
-        newPassword
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+    // Supabase password change
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      setMessage('Failed to change password: ' + error.message);
+    } else {
       setMessage('Password changed successfully!');
       if (onSuccess) onSuccess();
-    } catch (err) {
-      if (err.response && err.response.data && err.response.data.error) {
-        setMessage(err.response.data.error);
-      } else {
-        setMessage('Failed to change password');
-      }
     }
     setLoading(false);
   };
@@ -51,66 +46,90 @@ function ChangePassword({ onClose, onSuccess }) {
       alignItems: 'center',
     }}>
       <form onSubmit={handleSubmit} style={{ width: '100%' }}>
-        <input
-          type="password"
-          placeholder="Current password"
-          value={oldPassword}
-          onChange={e => setOldPassword(e.target.value)}
-          required
-          style={{
-            width: '100%',
-            padding: '16px 18px',
-            fontSize: '1.08rem',
-            border: '1.5px solid #cbd5e1',
-            borderRadius: '10px',
-            boxSizing: 'border-box',
-            fontFamily: 'inherit',
-            transition: 'all 0.2s',
-            outline: 'none',
-            background: '#f8fafc',
-            marginBottom: 14,
-          }}
-        />
-        <input
-          type="password"
-          placeholder="New password"
-          value={newPassword}
-          onChange={e => setNewPassword(e.target.value)}
-          required
-          style={{
-            width: '100%',
-            padding: '16px 18px',
-            fontSize: '1.08rem',
-            border: '1.5px solid #cbd5e1',
-            borderRadius: '10px',
-            boxSizing: 'border-box',
-            fontFamily: 'inherit',
-            transition: 'all 0.2s',
-            outline: 'none',
-            background: '#f8fafc',
-            marginBottom: 14,
-          }}
-        />
-        <input
-          type="password"
-          placeholder="Confirm new password"
-          value={confirm}
-          onChange={e => setConfirm(e.target.value)}
-          required
-          style={{
-            width: '100%',
-            padding: '16px 18px',
-            fontSize: '1.08rem',
-            border: '1.5px solid #cbd5e1',
-            borderRadius: '10px',
-            boxSizing: 'border-box',
-            fontFamily: 'inherit',
-            transition: 'all 0.2s',
-            outline: 'none',
-            background: '#f8fafc',
-            marginBottom: 14,
-          }}
-        />
+        <div style={{ position: 'relative', marginBottom: 14 }}>
+          <input
+            type={showOld ? 'text' : 'password'}
+            placeholder="Current password"
+            value={oldPassword}
+            onChange={e => setOldPassword(e.target.value)}
+            required
+            style={{
+              width: '100%',
+              padding: '16px 18px',
+              fontSize: '1.08rem',
+              border: '1.5px solid #cbd5e1',
+              borderRadius: '10px',
+              boxSizing: 'border-box',
+              fontFamily: 'inherit',
+              transition: 'all 0.2s',
+              outline: 'none',
+              background: '#f8fafc',
+            }}
+          />
+          <span
+            onClick={() => setShowOld((v) => !v)}
+            style={{ position: 'absolute', right: 12, top: 16, cursor: 'pointer' }}
+            aria-label={showOld ? 'Hide password' : 'Show password'}
+          >
+            {showOld ? <FaEyeSlash /> : <FaEye />}
+          </span>
+        </div>
+        <div style={{ position: 'relative', marginBottom: 14 }}>
+          <input
+            type={showNew ? 'text' : 'password'}
+            placeholder="New password"
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
+            required
+            style={{
+              width: '100%',
+              padding: '16px 18px',
+              fontSize: '1.08rem',
+              border: '1.5px solid #cbd5e1',
+              borderRadius: '10px',
+              boxSizing: 'border-box',
+              fontFamily: 'inherit',
+              transition: 'all 0.2s',
+              outline: 'none',
+              background: '#f8fafc',
+            }}
+          />
+          <span
+            onClick={() => setShowNew((v) => !v)}
+            style={{ position: 'absolute', right: 12, top: 16, cursor: 'pointer' }}
+            aria-label={showNew ? 'Hide password' : 'Show password'}
+          >
+            {showNew ? <FaEyeSlash /> : <FaEye />}
+          </span>
+        </div>
+        <div style={{ position: 'relative', marginBottom: 14 }}>
+          <input
+            type={showConfirm ? 'text' : 'password'}
+            placeholder="Confirm new password"
+            value={confirm}
+            onChange={e => setConfirm(e.target.value)}
+            required
+            style={{
+              width: '100%',
+              padding: '16px 18px',
+              fontSize: '1.08rem',
+              border: '1.5px solid #cbd5e1',
+              borderRadius: '10px',
+              boxSizing: 'border-box',
+              fontFamily: 'inherit',
+              transition: 'all 0.2s',
+              outline: 'none',
+              background: '#f8fafc',
+            }}
+          />
+          <span
+            onClick={() => setShowConfirm((v) => !v)}
+            style={{ position: 'absolute', right: 12, top: 16, cursor: 'pointer' }}
+            aria-label={showConfirm ? 'Hide password' : 'Show password'}
+          >
+            {showConfirm ? <FaEyeSlash /> : <FaEye />}
+          </span>
+        </div>
         <button
           type="submit"
           disabled={loading}

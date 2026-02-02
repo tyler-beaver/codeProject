@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import axios from 'axios';
+import { supabase } from '../supabaseClient';
 
 function ForgotPassword({ onSent }) {
   const [email, setEmail] = useState('');
@@ -11,12 +11,16 @@ function ForgotPassword({ onSent }) {
     e.preventDefault();
     setLoading(true);
     setMessage('');
-    try {
-      await axios.post('/api/auth/request-password-reset', { email });
+    // Use dynamic redirect URL for Supabase password reset
+    const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl,
+    });
+    if (error) {
+      setMessage('Failed to send reset email: ' + error.message);
+    } else {
       setMessage('Check your email for a reset link.');
       if (onSent) onSent();
-    } catch (err) {
-      setMessage('Failed to send reset email.');
     }
     setLoading(false);
   };

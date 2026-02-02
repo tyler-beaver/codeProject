@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import ForgotPassword from '../components/ForgotPassword';
-import axios from 'axios';
+import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 
 
 function Login({ setToken }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [showForgot, setShowForgot] = useState(false);
     const [showSent, setShowSent] = useState(false);
@@ -15,21 +17,16 @@ function Login({ setToken }) {
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
-        try {
-            const res = await axios.post('/api/auth/login', { email, password });
-            if (res && res.data && res.data.token) {
-                localStorage.setItem('token', res.data.token);
-                setToken(res.data.token);
-                navigate('/dashboard');
-            } else {
-                setError('Login failed: no token returned.');
-            }
-        } catch (err) {
-            if (err.response && err.response.data && err.response.data.error) {
-                setError(err.response.data.error);
-            } else {
-                setError('Invalid email or password');
-            }
+        // Login with Supabase Auth
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+            setError(error.message);
+        } else if (data && data.session) {
+            localStorage.setItem('token', data.session.access_token);
+            setToken(data.session.access_token);
+            navigate('/dashboard');
+        } else {
+            setError('Login failed: no session returned.');
         }
     };
 
@@ -63,16 +60,25 @@ function Login({ setToken }) {
                                     style={styles.input}
                                 />
                             </div>
-                            <div style={styles.formGroup}>
-                                <label style={styles.label}>Password</label>
-                                <input
-                                    type="password"
-                                    placeholder="••••••••"
-                                    value={password}
-                                    onChange={e => setPassword(e.target.value)}
-                                    required
-                                    style={styles.input}
-                                />
+                                                        <div style={styles.formGroup}>
+                                                                <label style={styles.label}>Password</label>
+                                                                <div style={{ position: 'relative' }}>
+                                                                    <input
+                                                                        type={showPassword ? 'text' : 'password'}
+                                                                        placeholder="••••••••"
+                                                                        value={password}
+                                                                        onChange={e => setPassword(e.target.value)}
+                                                                        required
+                                                                        style={styles.input}
+                                                                    />
+                                                                    <span
+                                                                        onClick={() => setShowPassword((v) => !v)}
+                                                                        style={{ position: 'absolute', right: 12, top: 16, cursor: 'pointer' }}
+                                                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                                                    >
+                                                                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                                                    </span>
+                                                                </div>
                             </div>
                             {error && <div style={styles.errorBox}>{error}</div>}
                             <button type="submit" style={styles.button} onMouseEnter={e => e.target.style.background = '#2563eb'} onMouseLeave={e => e.target.style.background = '#3b82f6'}>

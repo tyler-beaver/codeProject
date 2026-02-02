@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { supabase } from '../supabaseClient';
 // ...existing code...
 import ChangePassword from '../components/ChangePassword';
 
@@ -11,24 +11,15 @@ function Profile() {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const token = localStorage.getItem('token');
-                if (!token) {
+                const { data, error } = await supabase.auth.getUser();
+                if (error) {
                     setError('Not authenticated');
                     setLoading(false);
                     return;
                 }
-                const res = await axios.get('/api/auth/profile', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setUser(res.data.user);
+                setUser(data.user);
             } catch (err) {
-                if (err.response && err.response.data && err.response.data.error) {
-                    setError('Failed to load profile: ' + err.response.data.error);
-                } else if (err.message) {
-                    setError('Failed to load profile: ' + err.message);
-                } else {
-                    setError('Failed to load profile (unknown error)');
-                }
+                setError('Failed to load profile');
             } finally {
                 setLoading(false);
             }
