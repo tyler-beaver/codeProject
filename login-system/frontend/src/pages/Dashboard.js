@@ -19,6 +19,7 @@ function Dashboard() {
     salary: "",
   });
   const [editLoading, setEditLoading] = useState(false);
+
   const handleDelete = async (id) => {
     setDeleteJobId(id);
   };
@@ -111,6 +112,7 @@ function Dashboard() {
     setDeleteJobId(null);
   };
   const cancelDelete = () => setDeleteJobId(null);
+
   const successPercentage = Math.round(
     ((stats.offer + stats.interview) / stats.total) * 100,
   );
@@ -351,6 +353,7 @@ function Dashboard() {
                   <span style={styles.salary}>{job.salary}</span>
                 </div>
               </div>
+
               {expandedJob === job.id && (
                 <div style={styles.jobCardExpanded}>
                   <div style={styles.actionButtons}>
@@ -366,8 +369,6 @@ function Dashboard() {
                           salary: job.salary,
                         });
                       }}
-                      onMouseEnter={(e) => (e.target.background = "#f1f5f9")}
-                      onMouseLeave={(e) => (e.target.background = "#f8fafc")}
                     >
                       ✏️ Edit
                     </button>
@@ -380,119 +381,12 @@ function Dashboard() {
                           setNoteInput(job.note || "");
                         }
                       }}
-                      onMouseEnter={(e) => (e.target.background = "#f1f5f9")}
-                      onMouseLeave={(e) => (e.target.background = "#f8fafc")}
                     >
-                      � Add Note
+                      💬 Add Note
                     </button>
-                    {job.note && (
-                      <div
-                        style={{
-                          marginTop: 12,
-                          background: "#f1f5f9",
-                          borderRadius: 8,
-                          padding: "10px 16px",
-                          color: "#334155",
-                          fontSize: "0.98rem",
-                        }}
-                      >
-                        <strong>Note:</strong> {job.note}
-                      </div>
-                    )}
-                    {noteJobId && (
-                      <div
-                        style={styles.formOverlay}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div style={styles.formContainer}>
-                          <div style={styles.formHeader}>
-                            <h2
-                              style={{
-                                margin: 0,
-                                fontSize: "1.5rem",
-                                fontWeight: 700,
-                                color: "#0f172a",
-                              }}
-                            >
-                              Add Note
-                            </h2>
-                            <button
-                              style={styles.closeBtn}
-                              onClick={() => setNoteJobId(null)}
-                            >
-                              ✕
-                            </button>
-                          </div>
-                          <form
-                            onSubmit={async (e) => {
-                              e.preventDefault();
-                              setNoteLoading(true);
-                              const { error } = await supabase
-                                .from("applications")
-                                .update({ note: noteInput })
-                                .eq("id", noteJobId);
-                              setNoteLoading(false);
-                              if (!error) {
-                                setJobs((jobs) =>
-                                  jobs.map((j) =>
-                                    j.id === noteJobId
-                                      ? { ...j, note: noteInput }
-                                      : j,
-                                  ),
-                                );
-                                setNoteJobId(null);
-                              } else {
-                                alert("Error saving note");
-                              }
-                            }}
-                            style={styles.form}
-                          >
-                            <div style={styles.formGroup}>
-                              <label
-                                style={{ fontWeight: 700, color: "#0f172a" }}
-                              >
-                                Note
-                              </label>
-                              <textarea
-                                value={noteInput}
-                                onChange={(e) => setNoteInput(e.target.value)}
-                                placeholder="Type your note here..."
-                                style={{
-                                  ...styles.input,
-                                  minHeight: 80,
-                                  resize: "vertical",
-                                }}
-                                disabled={noteLoading}
-                              />
-                            </div>
-                            <div style={styles.formButtons}>
-                              <button
-                                type="submit"
-                                style={styles.submitBtn}
-                                disabled={noteLoading}
-                              >
-                                {noteLoading ? "Saving..." : "Save"}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setNoteJobId(null)}
-                                style={styles.cancelBtn}
-                                disabled={noteLoading}
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </form>
-                        </div>
-                      </div>
-                    )}
                     <button
                       style={styles.actionBtn}
-                      onClick={(e) => {
-                        e.stopPropagation(); /* your view job logic here */
-                      }}
-                      onMouseEnter={(e) => (e.target.background = "#f1f5f9")}
-                      onMouseLeave={(e) => (e.target.background = "#f8fafc")}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       🔗 View Job
                     </button>
@@ -502,17 +396,122 @@ function Dashboard() {
                         e.stopPropagation();
                         handleDelete(job.id);
                       }}
-                      onMouseEnter={(e) => (e.target.background = "#fee2e2")}
-                      onMouseLeave={(e) => (e.target.background = "#f8fafc")}
                     >
                       🗑️ Delete
                     </button>
                   </div>
+
+                  {/* --- Note displayed below buttons --- */}
+                  {job.note && (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        background: "#f1f5f9",
+                        borderRadius: 8,
+                        padding: "10px 16px",
+                        color: "#334155",
+                        fontSize: "0.98rem",
+                      }}
+                    >
+                      <strong>Note:</strong> {job.note}
+                    </div>
+                  )}
+
+                  {/* Add Note Form */}
+                  {noteJobId && (
+                    <div
+                      style={styles.formOverlay}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div style={styles.formContainer}>
+                        <div style={styles.formHeader}>
+                          <h2
+                            style={{
+                              margin: 0,
+                              fontSize: "1.5rem",
+                              fontWeight: 700,
+                              color: "#0f172a",
+                            }}
+                          >
+                            Add Note
+                          </h2>
+                          <button
+                            style={styles.closeBtn}
+                            onClick={() => setNoteJobId(null)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        <form
+                          onSubmit={async (e) => {
+                            e.preventDefault();
+                            setNoteLoading(true);
+                            const { error } = await supabase
+                              .from("applications")
+                              .update({ note: noteInput })
+                              .eq("id", noteJobId);
+                            setNoteLoading(false);
+                            if (!error) {
+                              setJobs((jobs) =>
+                                jobs.map((j) =>
+                                  j.id === noteJobId
+                                    ? { ...j, note: noteInput }
+                                    : j,
+                                ),
+                              );
+                              setNoteJobId(null);
+                            } else {
+                              alert("Error saving note");
+                            }
+                          }}
+                          style={styles.form}
+                        >
+                          <div style={styles.formGroup}>
+                            <label
+                              style={{ fontWeight: 700, color: "#0f172a" }}
+                            >
+                              Note
+                            </label>
+                            <textarea
+                              value={noteInput}
+                              onChange={(e) => setNoteInput(e.target.value)}
+                              placeholder="Type your note here..."
+                              style={{
+                                ...styles.input,
+                                minHeight: 80,
+                                resize: "vertical",
+                              }}
+                              disabled={noteLoading}
+                            />
+                          </div>
+                          <div style={styles.formButtons}>
+                            <button
+                              type="submit"
+                              style={styles.submitBtn}
+                              disabled={noteLoading}
+                            >
+                              {noteLoading ? "Saving..." : "Save"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setNoteJobId(null)}
+                              style={styles.cancelBtn}
+                              disabled={noteLoading}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           ))}
         </div>
+
+        {/* Edit Application Modal */}
         {editJobId && (
           <div style={styles.formOverlay}>
             <div style={styles.formContainer}>
@@ -585,6 +584,7 @@ function Dashboard() {
                     disabled={editLoading}
                   />
                 </div>
+
                 <div style={styles.formGroup}>
                   <label style={{ fontWeight: 700, color: "#0f172a" }}>
                     Position *
