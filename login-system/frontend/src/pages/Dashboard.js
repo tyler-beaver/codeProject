@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 
 function Dashboard() {
+    const [showPendingModal, setShowPendingModal] = useState(false);
   const [noteJobId, setNoteJobId] = useState(null);
   const [noteInput, setNoteInput] = useState("");
   const [noteLoading, setNoteLoading] = useState(false);
@@ -297,11 +298,47 @@ function Dashboard() {
               <div style={styles.insightDesc}>Keep applying & learning</div>
             </div>
             <div style={styles.divider}></div>
-            <div style={styles.insight}>
+            <div
+              style={{
+                ...styles.insight,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(59,130,246,0.08)'
+              }}
+              onClick={() => setShowPendingModal(true)}
+              tabIndex={0}
+              role="button"
+              aria-label="Show pending applications"
+            >
               <div style={styles.insightTitle}>Action</div>
               <div style={styles.insightValue}>→</div>
               <div style={styles.insightDesc}>Follow up on pending</div>
             </div>
+                {showPendingModal && (
+                  <div style={styles.formOverlay} onClick={e => e.stopPropagation()}>
+                    <div style={styles.formContainer}>
+                      <div style={styles.formHeader}>
+                        <h2 style={{margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0f172a'}}>Pending Applications</h2>
+                        <button style={styles.closeBtn} onClick={() => setShowPendingModal(false)}>✕</button>
+                      </div>
+                      <div style={styles.form}>
+                        {jobs.filter(j => j.status === 'Applied').length === 0 ? (
+                          <div style={{color: '#64748b', fontSize: '1rem', textAlign: 'center'}}>No pending applications to follow up!</div>
+                        ) : (
+                          <ul style={{listStyle: 'none', padding: 0, margin: 0}}>
+                            {jobs.filter(j => j.status === 'Applied').map(job => (
+                              <li key={job.id} style={{marginBottom: 18, background: '#f1f5f9', borderRadius: 8, padding: '14px 18px', color: '#334155', boxShadow: '0 2px 8px rgba(0,0,0,0.04)'}}>
+                                <div style={{fontWeight: 700, fontSize: '1.08rem'}}>{job.company}</div>
+                                <div style={{fontSize: '0.98rem', marginBottom: 6}}>{job.position}</div>
+                                <div style={{fontSize: '0.92rem', color: '#64748b'}}>Applied: {job.date}</div>
+                                {/* Future: Add a 'Send Follow-up' button here */}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
           </div>
         </div>
       </div>
