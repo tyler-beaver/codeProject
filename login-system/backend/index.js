@@ -16,6 +16,7 @@ require("dotenv").config();
 const authRoutes = require("./routes/auth");
 const enrichRoutes = require("./routes/enrich");
 const applicationsRoutes = require("./routes/applications");
+const emailRoutes = require("./routes/email");
 
 const app = express();
 
@@ -27,6 +28,9 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/enrich", enrichRoutes);
 app.use("/api/applications", applicationsRoutes);
+app.use("/api/email", emailRoutes);
+// Alias to support Google OAuth redirect commonly configured as /auth/google/callback
+app.use("/auth", emailRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5001;

@@ -28,6 +28,8 @@ function Dashboard() {
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [selectedDayISO, setSelectedDayISO] = useState(null);
+  const [syncing, setSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState(null);
 
   const handleDelete = async (id) => {
     setDeleteJobId(id);
@@ -40,6 +42,45 @@ function Dashboard() {
     }
     getUser();
   }, []);
+
+  const syncEmails = async () => {
+    if (!userId) return;
+    try {
+      setSyncing(true);
+      const backend = process.env.REACT_APP_BACKEND_URL || "http://localhost:5001";
+      const resp = await fetch(`${backend}/api/email/sync?userId=${encodeURIComponent(userId)}`, { method: "POST" });
+      const data = await resp.json();
+      setLastSync({
+        processed: data.processed || 0,
+        total: data.total || 0,
+        created: data.created || 0,
+        updated: data.updated || 0,
+      });
+      // Trigger a refresh of jobs
+      const { data: refreshed, error } = await supabase
+        .from("applications")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      if (!error && refreshed) {
+        setJobs(refreshed.map((app) => ({
+          id: app.id,
+          company: app.name,
+          position: app.description || "",
+          status: app.status || "Applied",
+          date: app.created_at ? app.created_at.split("T")[0] : "",
+          salary: app.salary || "",
+          note: app.note || "",
+          interview_date: app.interview_date || "",
+          interview_time: app.interview_time || "",
+        })));
+      }
+    } catch (e) {
+      console.error("Sync emails error", e);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   useEffect(() => {
     async function fetchJobs() {
@@ -154,6 +195,11 @@ function Dashboard() {
         <div>
           <h1 style={styles.title}>Your Applications</h1>
           <p style={styles.subtitle}>Track and manage your job opportunities</p>
+          {lastSync && (
+            <div style={{ marginTop: 8, color: lastSync.processed > 0 ? "#16a34a" : "#64748b", fontWeight: 600 }}>
+              Synced {lastSync.total} emails — created {lastSync.created}, updated {lastSync.updated}
+            </div>
+          )}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button
@@ -171,6 +217,15 @@ function Dashboard() {
             onMouseLeave={(e) => (e.target.style.transform = "translateY(0)")}
           >
             📅 Calendar
+          </button>
+          <button
+            style={styles.addButton}
+            onClick={syncEmails}
+            disabled={syncing}
+            onMouseEnter={(e) => (e.target.style.transform = "translateY(-2px)")}
+            onMouseLeave={(e) => (e.target.style.transform = "translateY(0)")}
+          >
+            {syncing ? "Syncing..." : "Sync Job Emails"}
           </button>
         </div>
       </div>

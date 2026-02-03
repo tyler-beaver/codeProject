@@ -27,9 +27,62 @@ function Profile() {
     fetchProfile();
   }, []);
 
+  useEffect(() => {
+    const fetchEmailStatus = async () => {
+      if (!user) return;
+      try {
+        const backend = process.env.REACT_APP_BACKEND_URL || "http://localhost:5001";
+        const resp = await fetch(`${backend}/api/email/status?userId=${encodeURIComponent(user.id)}`);
+        const data = await resp.json();
+        setEmailStatus(data || { connectedProviders: [] });
+      } catch (e) {
+        console.error("Fetch email status error", e);
+      }
+    };
+    fetchEmailStatus();
+  }, [user]);
+
   // ...existing code...
   const [showChange, setShowChange] = useState(false);
   const [showChanged, setShowChanged] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [emailStatus, setEmailStatus] = useState({ connectedProviders: [] });
+  const connectGmail = async () => {
+    if (!user) return;
+    try {
+      setConnecting(true);
+      const backend = process.env.REACT_APP_BACKEND_URL || "http://localhost:5001";
+      const resp = await fetch(`${backend}/api/email/google/url?userId=${encodeURIComponent(user.id)}`);
+      const data = await resp.json();
+      if (data.url) {
+        window.location.href = data.url; // redirect to Google consent
+      } else if (data.error) {
+        alert(`Cannot start Google connect: ${data.error}.\n` +
+              (data.hint ? `Hint: ${data.hint}` : ""));
+      }
+    } catch (e) {
+      console.error("Connect Gmail error", e);
+      alert("Failed to start Google connect. See console for details.");
+    } finally {
+      setConnecting(false);
+    }
+  };
+  const disconnectGmail = async () => {
+    if (!user) return;
+    try {
+      const backend = process.env.REACT_APP_BACKEND_URL || "http://localhost:5001";
+      const resp = await fetch(`${backend}/api/email/google?userId=${encodeURIComponent(user.id)}`, { method: "DELETE" });
+      const data = await resp.json();
+      if (data && data.success) {
+        setEmailStatus((s) => ({ connectedProviders: (s.connectedProviders || []).filter((p) => p !== "google") }));
+      } else {
+        alert("Failed to disconnect Google");
+      }
+    } catch (e) {
+      console.error("Disconnect Gmail error", e);
+      alert("Failed to disconnect Google. See console for details.");
+    }
+  };
   return (
     <div style={styles.container}>
       <div style={styles.card}>
@@ -70,6 +123,43 @@ function Profile() {
               >
                 Change Password
               </button>
+              <div style={{ marginTop: 12 }}>
+                {emailStatus.connectedProviders?.includes("google") ? (
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <span style={{ color: "#16a34a", fontWeight: 700 }}>Google connected</span>
+                    <button
+                      onClick={disconnectGmail}
+                      style={{
+                        background: "#ef4444",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 6,
+                        padding: "6px 12px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Disconnect
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={connectGmail}
+                    style={{
+                      background: "#ef4444",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "8px 18px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                    disabled={connecting}
+                  >
+                    {connecting ? "Connecting..." : "Connect Gmail"}
+                  </button>
+                )}
+              </div>
             </div>
             {showChange && (
               <div
