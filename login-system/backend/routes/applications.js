@@ -7,7 +7,7 @@ router.get("/user/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
     const result = await pool.query(
-      "SELECT id, name, description, created_at FROM applications WHERE user_id = $1 ORDER BY created_at DESC",
+      "SELECT id, name, description, created_at, interview_date, interview_time FROM applications WHERE user_id = $1 ORDER BY created_at DESC",
       [userId],
     );
     res.json(result.rows);
@@ -20,14 +20,14 @@ router.get("/user/:userId", async (req, res) => {
 // Add a new application for a user
 router.post("/user/:userId", async (req, res) => {
   const { userId } = req.params;
-  const { name, description } = req.body;
+  const { name, description, interview_date, interview_time } = req.body;
   if (!name) {
     return res.status(400).json({ error: "Name is required" });
   }
   try {
     const result = await pool.query(
-      "INSERT INTO applications (user_id, name, description) VALUES ($1, $2, $3) RETURNING id, name, description, created_at",
-      [userId, name, description || null],
+      "INSERT INTO applications (user_id, name, description, interview_date, interview_time) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, description, created_at, interview_date, interview_time",
+      [userId, name, description || null, interview_date || null, interview_time || null],
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 
 function Dashboard() {
+
     const [showPendingModal, setShowPendingModal] = useState(false);
   const [noteJobId, setNoteJobId] = useState(null);
   const [noteInput, setNoteInput] = useState("");
@@ -18,8 +19,15 @@ function Dashboard() {
     position: "",
     status: "Applied",
     salary: "",
+    interview_date: "",
+    interview_time: "",
   });
   const [editLoading, setEditLoading] = useState(false);
+  const [showJobModal, setShowJobModal] = useState(false);
+  const [jobModalData, setJobModalData] = useState(null);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [calendarDate, setCalendarDate] = useState(new Date());
+  const [selectedDayISO, setSelectedDayISO] = useState(null);
 
   const handleDelete = async (id) => {
     setDeleteJobId(id);
@@ -44,17 +52,17 @@ function Dashboard() {
         .order("created_at", { ascending: false });
       if (error) setJobs([]);
       else
-        setJobs(
-          (data || []).map((app) => ({
-            id: app.id,
-            company: app.name,
-            position: app.description || "",
-            status: app.status || "Applied",
-            date: app.created_at ? app.created_at.split("T")[0] : "",
-            salary: app.salary || "",
-            note: app.note || "",
-          })),
-        );
+        setJobs((data || []).map((app) => ({
+          id: app.id,
+          company: app.name,
+          position: app.description || "",
+          status: app.status || "Applied",
+          date: app.created_at ? app.created_at.split("T")[0] : "",
+          salary: app.salary || "",
+          note: app.note || "",
+          interview_date: app.interview_date || "",
+          interview_time: app.interview_time || "",
+        })));
       setLoading(false);
     }
     fetchJobs();
@@ -114,10 +122,30 @@ function Dashboard() {
   };
   const cancelDelete = () => setDeleteJobId(null);
 
-  const successPercentage = Math.round(
-    ((stats.offer + stats.interview) / stats.total) * 100,
-  );
+  const successPercentage = Math.round(((stats.offer + stats.interview) / stats.total) * 100);
   const rejectionRate = Math.round((stats.rejected / stats.total) * 100);
+
+  // Interview events derived from jobs
+  const interviewEvents = Array.isArray(jobs)
+    ? jobs
+        .filter((j) => j && j.interview_date)
+        .map((j) => ({
+          date: j.interview_date,
+          time: j.interview_time,
+          company: j.company,
+          position: j.position,
+        }))
+    : [];
+
+  // Calendar helpers for current month view
+  const calYear = calendarDate.getFullYear();
+  const calMonth = calendarDate.getMonth();
+  const calFirstDayIdx = new Date(calYear, calMonth, 1).getDay();
+  const calDaysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const calCells = Array.from(
+    { length: calFirstDayIdx + calDaysInMonth },
+    (_, i) => (i < calFirstDayIdx ? null : i - calFirstDayIdx + 1)
+  );
 
   return (
     <div style={styles.container}>
@@ -127,16 +155,115 @@ function Dashboard() {
           <h1 style={styles.title}>Your Applications</h1>
           <p style={styles.subtitle}>Track and manage your job opportunities</p>
         </div>
-        <button
-          style={styles.addButton}
-          onClick={() => setShowAddForm(!showAddForm)}
-          onMouseEnter={(e) => (e.target.style.transform = "translateY(-2px)")}
-          onMouseLeave={(e) => (e.target.style.transform = "translateY(0)")}
-        >
-          + Add Application
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            style={styles.addButton}
+            onClick={() => setShowAddForm(!showAddForm)}
+            onMouseEnter={(e) => (e.target.style.transform = "translateY(-2px)")}
+            onMouseLeave={(e) => (e.target.style.transform = "translateY(0)")}
+          >
+            + Add Application
+          </button>
+          <button
+            style={styles.addButton}
+            onClick={() => setShowCalendarModal(true)}
+            onMouseEnter={(e) => (e.target.style.transform = "translateY(-2px)")}
+            onMouseLeave={(e) => (e.target.style.transform = "translateY(0)")}
+          >
+            📅 Calendar
+          </button>
+        </div>
       </div>
 
+      {/* Calendar Modal */}
+      {showCalendarModal && (
+        <div style={styles.formOverlay} onClick={() => { setShowCalendarModal(false); setSelectedDayISO(null); }}>
+          <div style={styles.formContainer} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.formHeader}>
+              <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#0f172a" }}>Interview Calendar</h2>
+              <button style={styles.closeBtn} onClick={() => { setShowCalendarModal(false); setSelectedDayISO(null); }}>✕</button>
+            </div>
+            <div style={styles.form}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <button
+                  type="button"
+                  style={styles.calendarNavBtn}
+                  onClick={() => setCalendarDate(new Date(calYear, calMonth - 1, 1))}
+                >
+                  ← Prev
+                </button>
+                <div style={styles.calendarMonthLabel}>
+                  {calendarDate.toLocaleString("default", { month: "long" })} {calYear}
+                </div>
+                <button
+                  type="button"
+                  style={styles.calendarNavBtn}
+                  onClick={() => setCalendarDate(new Date(calYear, calMonth + 1, 1))}
+                >
+                  Next →
+                </button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, fontWeight: 700, color: "#64748b", marginBottom: 8 }}>
+                <div>Sun</div>
+                <div>Mon</div>
+                <div>Tue</div>
+                <div>Wed</div>
+                <div>Thu</div>
+                <div>Fri</div>
+                <div>Sat</div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
+                {calCells.map((day, idx) => {
+                  const cellDate = day ? new Date(calYear, calMonth, day) : null;
+                  const iso = cellDate ? cellDate.toISOString().split("T")[0] : null;
+                  const events = iso ? interviewEvents.filter((ev) => ev.date === iso) : [];
+                  const cellStyle = {
+                    ...styles.calendarDayCell,
+                    ...(events.length ? styles.calendarDayCellHasInterview : {}),
+                    cursor: cellDate ? "pointer" : "default",
+                  };
+                  return (
+                    <div
+                      key={idx}
+                      style={cellStyle}
+                      onClick={() => {
+                        if (iso) setSelectedDayISO(iso);
+                      }}
+                    >
+                      <div style={{ fontWeight: 700, color: "#0f172a" }}>{day || ""}</div>
+                      {events.slice(0, 2).map((ev, i) => (
+                        <div key={i} style={{ fontSize: 12, color: "#2563eb", marginTop: 2 }}>
+                          {ev.time ? `${ev.time} ` : ""}{ev.company}
+                        </div>
+                      ))}
+                      {events.length > 2 && (
+                        <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>+{events.length - 2} more</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {selectedDayISO && (
+                <div style={{ marginTop: 16 }}>
+                  <strong>Interviews on {selectedDayISO}:</strong>
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                    {interviewEvents.filter((ev) => ev.date === selectedDayISO).length === 0 && (
+                      <li style={{ color: "#64748b", fontSize: "1.3rem" }}>No interviews scheduled.</li>
+                    )}
+                    {interviewEvents
+                      .filter((ev) => ev.date === selectedDayISO)
+                      .map((ev, idx) => (
+                        <li key={idx} style={{ fontSize: "1.3rem", color: "#0f172a", marginTop: 2 }}>
+                          {ev.time ? <span style={{ color: "#2563eb" }}>{ev.time}</span> : null} {ev.company} <span style={{ color: "#64748b" }}>{ev.position}</span>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {/* Add Form */}
       {showAddForm && (
         <JobForm
@@ -343,6 +470,44 @@ function Dashboard() {
         </div>
       </div>
 
+      {/* View Job Modal */}
+      {showJobModal && jobModalData && (
+        <div style={styles.formOverlay} onClick={() => { setShowJobModal(false); setJobModalData(null); }}>
+          <div style={styles.formContainer} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.formHeader}>
+              <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>Job Posting</h2>
+              <button style={styles.closeBtn} onClick={() => { setShowJobModal(false); setJobModalData(null); }}>✕</button>
+            </div>
+            <div style={styles.form}>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#0f172a' }}>{jobModalData.company}</div>
+                <div style={{ fontSize: '0.95rem', color: '#64748b' }}>{jobModalData.position}</div>
+              </div>
+              <p style={{ margin: '0 0 8px 0' }}><strong>Status:</strong> {jobModalData.status}</p>
+              <p style={{ margin: '0 0 8px 0' }}><strong>Applied:</strong> {jobModalData.date}</p>
+              {jobModalData.interview_date && (
+                <p style={{ margin: '0 0 8px 0' }}><strong>Interview Date:</strong> {jobModalData.interview_date}</p>
+              )}
+              {jobModalData.interview_time && (
+                <p style={{ margin: '0 0 8px 0' }}><strong>Interview Time:</strong> {jobModalData.interview_time}</p>
+              )}
+              {jobModalData.salary && (
+                <p style={{ margin: '0 0 8px 0' }}><strong>Salary:</strong> {jobModalData.salary}</p>
+              )}
+              <div style={{ marginTop: 12, color: '#64748b', fontStyle: 'italic' }}>Coming soon: Full job posting details and actions.</div>
+              <div style={styles.formButtons}>
+                <button
+                  type="button"
+                  style={styles.cancelBtn}
+                  onClick={() => { setShowJobModal(false); setJobModalData(null); }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Jobs List */}
       <div style={styles.jobsSection}>
         <h2 style={styles.sectionTitle}>All Applications ({stats.total})</h2>
@@ -404,6 +569,8 @@ function Dashboard() {
                           position: job.position,
                           status: job.status,
                           salary: job.salary,
+                          interview_date: job.interview_date || "",
+                          interview_time: job.interview_time || "",
                         });
                       }}
                     >
@@ -423,7 +590,11 @@ function Dashboard() {
                     </button>
                     <button
                       style={styles.actionBtn}
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setJobModalData(job);
+                        setShowJobModal(true);
+                      }}
                     >
                       🔗 View Job
                     </button>
@@ -438,6 +609,29 @@ function Dashboard() {
                     </button>
                   </div>
 
+                  {/* --- Interview Date/Time --- */}
+                  {(job.interview_date || job.interview_time) && (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        background: "#f1f5f9",
+                        borderRadius: 8,
+                        padding: "10px 16px",
+                        color: "#334155",
+                        fontSize: "0.98rem",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 4,
+                      }}
+                    >
+                      {job.interview_date && (
+                        <span><strong>Interview Date:</strong> {job.interview_date}</span>
+                      )}
+                      {job.interview_time && (
+                        <span><strong>Interview Time:</strong> {job.interview_time}</span>
+                      )}
+                    </div>
+                  )}
                   {/* --- Note displayed below buttons --- */}
                   {job.note && (
                     <div
@@ -581,6 +775,8 @@ function Dashboard() {
                       description: editForm.position,
                       status: editForm.status,
                       salary: editForm.salary,
+                      interview_date: editForm.interview_date || null,
+                      interview_time: editForm.interview_time || null,
                     })
                     .eq("id", editJobId);
                   setEditLoading(false);
@@ -594,6 +790,8 @@ function Dashboard() {
                               position: editForm.position,
                               status: editForm.status,
                               salary: editForm.salary,
+                              interview_date: editForm.interview_date,
+                              interview_time: editForm.interview_time,
                             }
                           : j,
                       ),
@@ -667,6 +865,34 @@ function Dashboard() {
                       setEditForm((f) => ({ ...f, salary: e.target.value }))
                     }
                     placeholder="Salary"
+                    style={styles.input}
+                    disabled={editLoading}
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={{ fontWeight: 700, color: "#0f172a" }}>
+                    Interview Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.interview_date}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, interview_date: e.target.value }))
+                    }
+                    style={styles.input}
+                    disabled={editLoading}
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={{ fontWeight: 700, color: "#0f172a" }}>
+                    Interview Time
+                  </label>
+                  <input
+                    type="time"
+                    value={editForm.interview_time}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, interview_time: e.target.value }))
+                    }
                     style={styles.input}
                     disabled={editLoading}
                   />
@@ -745,6 +971,8 @@ function JobForm({ onClose, onAdd, userId }) {
     position: "",
     status: "Applied",
     salary: "",
+    interview_date: "",
+    interview_time: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const handleChange = (e) => {
@@ -770,6 +998,8 @@ function JobForm({ onClose, onAdd, userId }) {
           description: formData.position,
           status: formData.status,
           salary: formData.salary,
+          interview_date: formData.interview_date || null,
+          interview_time: formData.interview_time || null,
         },
       ])
       .select();
@@ -783,6 +1013,8 @@ function JobForm({ onClose, onAdd, userId }) {
         status: data[0].status || "Applied",
         date: data[0].created_at ? data[0].created_at.split("T")[0] : "",
         salary: data[0].salary || "",
+        interview_date: data[0].interview_date || "",
+        interview_time: data[0].interview_time || "",
       });
       onClose();
     }
@@ -860,6 +1092,30 @@ function JobForm({ onClose, onAdd, userId }) {
               value={formData.salary}
               onChange={handleChange}
               placeholder="e.g., $120k-140k"
+              style={styles.input}
+            />
+          </div>
+          <div style={styles.formGroup}>
+            <label style={{ fontWeight: 700, color: "#0f172a" }}>
+              Interview Date
+            </label>
+            <input
+              type="date"
+              name="interview_date"
+              value={formData.interview_date}
+              onChange={handleChange}
+              style={styles.input}
+            />
+          </div>
+          <div style={styles.formGroup}>
+            <label style={{ fontWeight: 700, color: "#0f172a" }}>
+              Interview Time
+            </label>
+            <input
+              type="time"
+              name="interview_time"
+              value={formData.interview_time}
+              onChange={handleChange}
               style={styles.input}
             />
           </div>
@@ -1148,7 +1404,7 @@ const styles = {
     background: "white",
     borderRadius: "12px",
     width: "90%",
-    maxWidth: "500px",
+    maxWidth: "720px",
     boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
   },
   formHeader: {
@@ -1212,6 +1468,37 @@ const styles = {
     fontWeight: 700,
     cursor: "pointer",
     transition: "all 0.3s ease",
+  },
+  calendarNavBtn: {
+    padding: "6px 10px",
+    background: "#f8fafc",
+    color: "#475569",
+    border: "1px solid #cbd5e1",
+    borderRadius: "6px",
+    fontSize: "0.85rem",
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  calendarMonthLabel: {
+    fontWeight: 700,
+    color: "#0f172a",
+    padding: "4px 12px",
+    margin: "0 8px",
+    borderRadius: "6px",
+    backgroundColor: "#f8fafc",
+    border: "1px solid #e2e8f0",
+  },
+  calendarDayCell: {
+    minHeight: 80,
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    borderRadius: 8,
+    padding: 8,
+  },
+  calendarDayCellHasInterview: {
+    background: "#f0f9ff",
+    borderColor: "#93c5fd",
+    boxShadow: "0 0 0 2px rgba(59,130,246,0.25)",
   },
 };
 
