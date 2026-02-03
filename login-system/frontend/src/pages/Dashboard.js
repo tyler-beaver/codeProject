@@ -1,36 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { supabase } from '../supabaseClient';
 
 
 function Dashboard() {
-    // Replace with real user id from auth/session
-    const userId = 1;
     const [jobs, setJobs] = useState([]);
     const [showAddForm, setShowAddForm] = useState(false);
     const [expandedJob, setExpandedJob] = useState(null);
     const [loading, setLoading] = useState(true);
-
+    const [userId, setUserId] = useState(null);
+    const [deleteJobId, setDeleteJobId] = useState(null);
+    const [editJobId, setEditJobId] = useState(null);
+    const [editForm, setEditForm] = useState({ company: '', position: '', status: 'Applied', salary: '' });
+    const [editLoading, setEditLoading] = useState(false);
+    const handleDelete = async (id) => {
+        setDeleteJobId(id);
+    };
+    
+    useEffect(() => {
+        async function getUser() {
+            const { data, error } = await supabase.auth.getUser();
+            if (data?.user) setUserId(data.user.id);
+        }
+        getUser();
+    }, []);
+    
     useEffect(() => {
         async function fetchJobs() {
+            if (!userId) return;
             setLoading(true);
-            try {
-                const res = await axios.get(`/api/applications/user/${userId}`);
-                setJobs(res.data.map(app => ({
-                    id: app.id,
-                    company: app.name,
-                    position: app.description || '',
-                    status: 'Applied', // Default, update if you add status to DB
-                    date: app.created_at ? app.created_at.split('T')[0] : '',
-                    salary: '',
-                })));
-            } catch (err) {
-                setJobs([]);
-            }
+            const { data, error } = await supabase
+            .from('applications')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+            if (error) setJobs([]);
+            else setJobs((data || []).map(app => ({
+                id: app.id,
+                company: app.name,
+                position: app.description || '',
+                status: app.status || 'Applied',
+                date: app.created_at ? app.created_at.split('T')[0] : '',
+                salary: app.salary || '',
+            })));
             setLoading(false);
         }
         fetchJobs();
-    }, [showAddForm]);
-
+    }, [showAddForm, userId]);
+    
     // Calculate statistics
     const stats = {
         total: jobs.length,
@@ -39,7 +55,7 @@ function Dashboard() {
         offer: jobs.filter(j => j.status === 'Offer').length,
         rejected: jobs.filter(j => j.status === 'Rejected').length,
     };
-
+    
     const getStatusColor = (status) => {
         switch(status) {
             case 'Applied': return '#3b82f6';
@@ -49,7 +65,7 @@ function Dashboard() {
             default: return '#64748b';
         }
     };
-
+    
     const getStatusBgColor = (status) => {
         switch(status) {
             case 'Applied': return '#dbeafe';
@@ -59,10 +75,24 @@ function Dashboard() {
             default: return '#f1f5f9';
         }
     };
-
+    
+    const confirmDelete = async () => {
+        if (!deleteJobId) return;
+        const { error } = await supabase
+            .from('applications')
+            .delete()
+            .eq('id', deleteJobId);
+        if (!error) {
+            setJobs(jobs => jobs.filter(j => j.id !== deleteJobId));
+        } else {
+            alert('Failed to delete application: ' + error.message);
+        }
+        setDeleteJobId(null);
+    };
+    const cancelDelete = () => setDeleteJobId(null);
     const successPercentage = Math.round(((stats.offer + stats.interview) / stats.total) * 100);
     const rejectionRate = Math.round((stats.rejected / stats.total) * 100);
-
+    
     return (
         <div style={styles.container}>
             {/* Header */}
@@ -226,16 +256,134 @@ function Dashboard() {
                             {expandedJob === job.id && (
                                 <div style={styles.jobCardExpanded}>
                                     <div style={styles.actionButtons}>
-                                        <button style={styles.actionBtn} onMouseEnter={e => e.target.background = '#f1f5f9'} onMouseLeave={e => e.target.background = '#f8fafc'}>✏️ Edit</button>
-                                        <button style={styles.actionBtn} onMouseEnter={e => e.target.background = '#f1f5f9'} onMouseLeave={e => e.target.background = '#f8fafc'}>💬 Add Note</button>
-                                        <button style={styles.actionBtn} onMouseEnter={e => e.target.background = '#f1f5f9'} onMouseLeave={e => e.target.background = '#f8fafc'}>🔗 View Job</button>
-                                        <button style={{...styles.actionBtn, color: '#ef4444'}} onMouseEnter={e => e.target.background = '#fee2e2'} onMouseLeave={e => e.target.background = '#f8fafc'}>🗑️ Delete</button>
+                                        <button style={styles.actionBtn} onClick={e => {
+                                            e.stopPropagation();
+                                            setEditJobId(job.id);
+                                            setEditForm({
+                                                company: job.company,
+                                                position: job.position,
+                                                status: job.status,
+                                                salary: job.salary
+                                            });
+                                        }} onMouseEnter={e => e.target.background = '#f1f5f9'} onMouseLeave={e => e.target.background = '#f8fafc'}>✏️ Edit</button>
+                                        <button style={styles.actionBtn} onClick={e => { e.stopPropagation(); /* your add note logic here */ }} onMouseEnter={e => e.target.background = '#f1f5f9'} onMouseLeave={e => e.target.background = '#f8fafc'}>💬 Add Note</button>
+                                        <button style={styles.actionBtn} onClick={e => { e.stopPropagation(); /* your view job logic here */ }} onMouseEnter={e => e.target.background = '#f1f5f9'} onMouseLeave={e => e.target.background = '#f8fafc'}>🔗 View Job</button>
+                                        <button style={{...styles.actionBtn, color: '#ef4444'}} onClick={e => { e.stopPropagation(); handleDelete(job.id); }} onMouseEnter={e => e.target.background = '#fee2e2'} onMouseLeave={e => e.target.background = '#f8fafc'}>🗑️ Delete</button>
                                     </div>
                                 </div>
                             )}
                         </div>
                     ))}
                 </div>
+                {editJobId && (
+                    <div style={styles.formOverlay}>
+                        <div style={styles.formContainer}>
+                            <div style={styles.formHeader}>
+                                <h2 style={{margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0f172a'}}>Edit Application</h2>
+                                <button style={styles.closeBtn} onClick={() => setEditJobId(null)}>✕</button>
+                            </div>
+                            <form onSubmit={async (e) => {
+                                e.preventDefault();
+                                setEditLoading(true);
+                                const { error } = await supabase
+                                    .from('applications')
+                                    .update({
+                                        name: editForm.company,
+                                        description: editForm.position,
+                                        status: editForm.status,
+                                        salary: editForm.salary
+                                    })
+                                    .eq('id', editJobId);
+                                setEditLoading(false);
+                                if (!error) {
+                                    setJobs(jobs => jobs.map(j => j.id === editJobId ? {
+                                        ...j,
+                                        company: editForm.company,
+                                        position: editForm.position,
+                                        status: editForm.status,
+                                        salary: editForm.salary
+                                    } : j));
+                                    setEditJobId(null);
+                                } else {
+                                    alert('Error updating application');
+                                }
+                            }} style={styles.form}>
+                                <div style={styles.formGroup}>
+                                    <label style={{fontWeight: 700, color: '#0f172a'}}>Company Name *</label>
+                                    <input
+                                        type="text"
+                                        value={editForm.company}
+                                        onChange={e => setEditForm(f => ({ ...f, company: e.target.value }))}
+                                        placeholder="Company Name"
+                                        style={styles.input}
+                                        required
+                                        disabled={editLoading}
+                                    />
+                                </div>
+                                <div style={styles.formGroup}>
+                                    <label style={{fontWeight: 700, color: '#0f172a'}}>Position *</label>
+                                    <input
+                                        type="text"
+                                        value={editForm.position}
+                                        onChange={e => setEditForm(f => ({ ...f, position: e.target.value }))}
+                                        placeholder="Position"
+                                        style={styles.input}
+                                        required
+                                        disabled={editLoading}
+                                    />
+                                </div>
+                                <div style={styles.formGroup}>
+                                    <label style={{fontWeight: 700, color: '#0f172a'}}>Status</label>
+                                    <select
+                                        value={editForm.status}
+                                        onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))}
+                                        style={styles.input}
+                                        disabled={editLoading}
+                                    >
+                                        <option value="Applied">Applied</option>
+                                        <option value="Interview">Interview</option>
+                                        <option value="Offer">Offer</option>
+                                        <option value="Rejected">Rejected</option>
+                                    </select>
+                                </div>
+                                <div style={styles.formGroup}>
+                                    <label style={{fontWeight: 700, color: '#0f172a'}}>Salary</label>
+                                    <input
+                                        type="text"
+                                        value={editForm.salary}
+                                        onChange={e => setEditForm(f => ({ ...f, salary: e.target.value }))}
+                                        placeholder="Salary"
+                                        style={styles.input}
+                                        disabled={editLoading}
+                                    />
+                                </div>
+                                <div style={styles.formButtons}>
+                                    <button type="submit" style={styles.submitBtn} disabled={editLoading}>{editLoading ? 'Saving...' : 'Save'}</button>
+                                    <button type="button" onClick={() => setEditJobId(null)} style={styles.cancelBtn} disabled={editLoading}>Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+                {deleteJobId && (
+                    <div style={styles.formOverlay}>
+                        <div style={styles.formContainer}>
+                            <div style={styles.formHeader}>
+                                <h2 style={{margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#ef4444'}}>Delete Application</h2>
+                                <button style={styles.closeBtn} onClick={cancelDelete}>✕</button>
+                            </div>
+                            <div style={styles.form}>
+                                <p style={{color: '#475569', marginBottom: 24}}>Are you sure you want to delete this application? This action cannot be undone.</p>
+                                <div style={styles.formButtons}>
+                                    <button onClick={confirmDelete} style={{...styles.submitBtn, background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'}}>
+                                        Delete
+                                    </button>
+                                    <button onClick={cancelDelete} style={styles.cancelBtn}>Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -246,6 +394,8 @@ function JobForm({ onClose, onAdd, userId }) {
     const [formData, setFormData] = useState({
         company: '',
         position: '',
+        status: 'Applied',
+        salary: '',
     });
     const [submitting, setSubmitting] = useState(false);
     const handleChange = (e) => {
@@ -257,20 +407,33 @@ function JobForm({ onClose, onAdd, userId }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitting(true);
-        try {
-            const res = await axios.post(`/api/applications/user/${userId}`,
-                { name: formData.company, description: formData.position });
+        if (!userId) {
+            alert('User not found. Please log in.');
+            setSubmitting(false);
+            return;
+        }
+        const { data, error } = await supabase
+            .from('applications')
+            .insert([{
+                user_id: userId,
+                name: formData.company,
+                description: formData.position,
+                status: formData.status,
+                salary: formData.salary
+            }])
+            .select();
+        if (error) {
+            alert('Failed to add application: ' + error.message);
+        } else if (data && data[0]) {
             onAdd({
-                id: res.data.id,
-                company: res.data.name,
-                position: res.data.description || '',
-                status: 'Applied',
-                date: res.data.created_at ? res.data.created_at.split('T')[0] : '',
-                salary: '',
+                id: data[0].id,
+                company: data[0].name,
+                position: data[0].description || '',
+                status: data[0].status || 'Applied',
+                date: data[0].created_at ? data[0].created_at.split('T')[0] : '',
+                salary: data[0].salary || '',
             });
             onClose();
-        } catch (err) {
-            alert('Failed to add application');
         }
         setSubmitting(false);
     };
