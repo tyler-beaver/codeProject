@@ -9,13 +9,13 @@
     - Listens on a port for incoming HTTP requests 
 */
 
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
 
-const authRoutes = require('./routes/auth');
-const enrichRoutes = require('./routes/enrich');
-const applicationsRoutes = require('./routes/applications');
+const authRoutes = require("./routes/auth");
+const enrichRoutes = require("./routes/enrich");
+const applicationsRoutes = require("./routes/applications");
 
 const app = express();
 
@@ -23,12 +23,10 @@ const app = express();
 app.use(cors()); // allow frontend requests
 app.use(express.json());
 
-
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/enrich', enrichRoutes);
-app.use('/api/applications', applicationsRoutes);
-
+app.use("/api/auth", authRoutes);
+app.use("/api/enrich", enrichRoutes);
+app.use("/api/applications", applicationsRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5001;

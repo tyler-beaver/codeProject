@@ -6,7 +6,9 @@ const pool = require("../db"); // your pg pool
 router.get("/enriched-users", async (req, res) => {
   try {
     // Fetch users from PostgreSQL
-    const result = await pool.query("SELECT id, username, email, created_at FROM users");
+    const result = await pool.query(
+      "SELECT id, username, email, created_at FROM users",
+    );
     const users = result.rows;
 
     // Return only id, username, email
