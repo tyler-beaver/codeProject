@@ -42,7 +42,7 @@ function EmailConfirmed() {
           You can now log in to your account.
         </p>
         <a
-          href="/login"
+          href="/codeProject/#/login"
           style={{
             marginTop: 8,
             background: "linear-gradient(90deg,#2563eb,#3b82f6)",
