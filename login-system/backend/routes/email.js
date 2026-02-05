@@ -356,8 +356,9 @@ function isLikelyJobEmail({ subject, body, from }) {
   // LinkedIn special-case: require positive job signals
   const isLinkedIn = domain && domain.includes("linkedin.com");
   const providerOk = isLinkedIn ? positiveSignals : (hasProviderDomain || positiveSignals);
-  // Loosen filter: allow if provider domain OR positive signals, even if some negative terms
-  return providerOk && !(hasNegative && !hasProviderDomain);
+  // Further loosen: ignore negative terms for known job domains
+  if (hasProviderDomain) return providerOk;
+  return providerOk && !hasNegative;
 }
 
 function extractDetails(subject, body, fromHeader) {
@@ -591,7 +592,7 @@ router.post("/sync", async (req, res) => {
       // Scoring-based classification
       const domain = getDomainFromFromHeader(from);
       const { status, confidence } = scoreEmailStatus({ text: `${subject} ${bodyText}`, domain, attachments });
-      if (!status || confidence < 0.3) {
+      if (!status || confidence < 0.05) {
         skipped += 1; reasonCounts.low_confidence += 1;
         console.log(`[SKIP] Low confidence:`, { id, subject, from, status, confidence });
         continue;
