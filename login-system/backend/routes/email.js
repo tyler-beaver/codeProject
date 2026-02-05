@@ -211,11 +211,14 @@ async function syncGmailEmailsForUser(userId) {
   if (!oauthClient) return console.warn("No Google account linked for user", userId);
   const gmail = google.gmail({ version: "v1", auth: oauthClient });
 
+
+  // Fetch last_email_id and last_email_internaldate
   const { rows: acctRows } = await pool.query(
-    "SELECT last_email_id FROM email_accounts WHERE user_id=$1 AND provider='google'",
+    "SELECT last_email_id, last_email_internaldate FROM email_accounts WHERE user_id=$1 AND provider='google'",
     [userId]
   );
   const lastEmailId = acctRows[0]?.last_email_id || null;
+  const lastEmailInternalDate = acctRows[0]?.last_email_internaldate || null;
 
   async function fetchWithRetry(fn, retries = 3, delay = 1000) {
     for (let i = 0; i < retries; i++) {
@@ -224,21 +227,33 @@ async function syncGmailEmailsForUser(userId) {
     }
   }
 
+
   let messages = [];
   try {
+    // Gmail 'after:' only works with epoch seconds (internalDate), not message ID
+    let q = undefined;
+    if (lastEmailInternalDate) {
+      // Use internalDate (epoch seconds)
+      const afterEpoch = Math.floor(Number(lastEmailInternalDate) / 1000);
+      q = `after:${afterEpoch}`;
+    }
     const listRes = await fetchWithRetry(() =>
       gmail.users.messages.list({
         userId: "me",
         maxResults: 200,
-        ...(lastEmailId ? { q: `after:${lastEmailId}` } : {}),
+        ...(q ? { q } : {}),
       })
     );
     messages = listRes.data.messages || [];
+    console.log("Fetched message IDs:", messages.map(m => m.id));
   } catch (e) { console.error("Failed to list Gmail messages:", e.message||e); return; }
+
 
   if (!messages.length) return console.log("No new emails to process");
   let skipped = 0, reasonCounts = { low_confidence:0, missing_body:0, non_job:0 };
   let newestEmailId = messages[0].id;
+  let newestInternalDate = null;
+
 
   for (const msg of messages) {
     let detail;
@@ -252,12 +267,28 @@ async function syncGmailEmailsForUser(userId) {
     const bodyText = getBodyText(payload);
     const attachments = getAttachmentTypes(payload);
     const domain = getDomainFromFromHeader(from);
+    const internalDate = detail.data.internalDate;
+    if (!newestInternalDate || (internalDate && Number(internalDate) > Number(newestInternalDate))) {
+      newestInternalDate = internalDate;
+    }
 
-    if(!isLikelyJobEmail({ subject, body:bodyText, from })){ skipped++; reasonCounts.non_job++; continue; }
-    if(!bodyText){ skipped++; reasonCounts.missing_body++; continue; }
+    if(!isLikelyJobEmail({ subject, body:bodyText, from })){
+      skipped++; reasonCounts.non_job++;
+      console.log("Skipped non-job email:", { subject, from, id: msg.id });
+      continue;
+    }
+    if(!bodyText){
+      skipped++; reasonCounts.missing_body++;
+      console.log("Skipped missing body:", { subject, from, id: msg.id });
+      continue;
+    }
 
     let { status, confidence } = scoreEmailStatus({ text:`${subject} ${bodyText}`, domain, attachments });
-    if(!status || confidence<0.5){ skipped++; reasonCounts.low_confidence++; continue; }
+    if(!status || confidence<0.5){
+      skipped++; reasonCounts.low_confidence++;
+      console.log("Skipped low confidence:", { subject, from, id: msg.id, status, confidence });
+      continue;
+    }
 
     const details = extractDetails(subject, bodyText, from);
     const interview = extractInterviewDateTime(bodyText);
@@ -287,10 +318,10 @@ async function syncGmailEmailsForUser(userId) {
     );
   }
 
-  if(newestEmailId){
+  if(newestEmailId && newestInternalDate){
     await pool.query(
-      "UPDATE email_accounts SET last_email_id=$1 WHERE user_id=$2 AND provider='google'",
-      [newestEmailId,userId]
+      "UPDATE email_accounts SET last_email_id=$1, last_email_internaldate=$2 WHERE user_id=$3 AND provider='google'",
+      [newestEmailId, newestInternalDate, userId]
     );
   }
 
