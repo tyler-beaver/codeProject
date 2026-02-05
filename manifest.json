@@ -1,0 +1,8 @@
+{
+  "short_name": "Platform",
+  "name": "Platform",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0a66c2",
+  "background_color": "#ffffff"
+}
