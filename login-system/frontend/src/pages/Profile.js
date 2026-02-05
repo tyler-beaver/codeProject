@@ -44,7 +44,7 @@ function Profile() {
       }
     };
     fetchEmailStatus();
-  }, [user]);
+  }, [user, location]);
 
   // ...existing code...
   const [showChange, setShowChange] = useState(false);
