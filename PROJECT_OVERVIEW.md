@@ -1,6 +1,20 @@
 
 # Tech Stack, Hosting, and Accounts
 
+## Recent Updates (2026)
+
+- **Delta Email Fetching:** Only fetches new Gmail messages since the last processed email using a new `last_email_id` column in `email_accounts`. Improves sync speed and avoids reprocessing.
+- **Retry Logic for Gmail API:** All Gmail API calls (messages.list, messages.get) now use exponential backoff retry logic to handle transient errors gracefully.
+- **Refactored Sync Logic:** Main email fetching and processing is now in a reusable `syncGmailEmailsForUser(userId)` function. The `/sync` route simply calls this, making the logic easier to maintain and test.
+- **Skipped Email Tracking:** Sync now tracks and logs skipped emails by reason: `non_job` (not job-related), `low_confidence` (classification too weak), `missing_body` (no parseable body). This aids debugging and transparency.
+- **Schema Updates:**
+  - Added `last_email_id` to `email_accounts` for delta sync.
+  - Ensured `user_id` is `TEXT` in `email_accounts` for compatibility.
+  - All migrations are lightweight and idempotent.
+- **Clean Logging:** Sync logs a summary of total processed, created, updated, and skipped emails, with breakdowns by skip reason.
+- **Preserved Features:** All previous logic (status classification, deduplication, company/role extraction, status precedence, attachment boosts, etc.) is preserved.
+- **Code Restructuring:** Helpers/constants (domains, negative terms, regexes) are grouped at the top; parsing helpers are centralized for maintainability.
+
 ## Tech Stack
 - **Frontend:** React (Create React App), Tailwind CSS, React Router, Supabase JS client
 - **Backend:** Node.js, Express, Nodemailer, Google APIs (OAuth2, Gmail), JWT, PostgreSQL (pg)
@@ -72,6 +86,9 @@
   - `email_accounts.user_id` is `TEXT` to match Supabase UUIDs.
   - Startup schema checks run idempotently in [login-system/backend/routes/email.js](login-system/backend/routes/email.js).
 
+  - `email_accounts.last_email_id` column tracks the last processed Gmail message for each account, enabling delta sync.
+  - All schema changes are backward-compatible and safe for repeated runs.
+
 ## Deployment & Hosting
 
 - **Frontend:** Hosted on GitHub Pages at [https://tyler-beaver.github.io/codeProject/](https://tyler-beaver.github.io/codeProject/)
@@ -109,7 +126,7 @@
 - Response includes:
   - `processed`, `total`, `created`, `updated`, `skipped`
   - `matched`, `updateAttempts`, `updateBlockedPrecedence`, `updateNoChange`, `creationErrors`
-  - `reasonCounts` (non_job, low_confidence, duplicate)
+  - `reasonCounts` (non_job, low_confidence, missing_body, duplicate)
   - `queriesUsed`, `scanWindowDays`
 - Dashboard banner shows totals; can be extended to surface reasons.
 
