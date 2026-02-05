@@ -133,7 +133,7 @@ router.get("/google/callback", async (req, res) => {
         `,
         [userId, "google", tokens.access_token || null, tokens.refresh_token || null, expires]
       );
-      const redirect = `${process.env.FRONTEND_URL || "http://localhost:3000"}/email-confirmed?connected=google`;
+      const redirect = `${process.env.FRONTEND_URL || "http://localhost:3000"}/#/email-confirmed?connected=google`;
       return res.redirect(redirect);
     } catch (dbErr) {
       console.error("Google OAuth DB save error:", dbErr?.message || dbErr);
