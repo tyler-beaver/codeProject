@@ -53,16 +53,23 @@
   - `email_accounts.user_id` is `TEXT` to match Supabase UUIDs.
   - Startup schema checks run idempotently in [login-system/backend/routes/email.js](login-system/backend/routes/email.js).
 
+## Deployment & Hosting
+
+- **Frontend:** Hosted on GitHub Pages at [https://tyler-beaver.github.io/codeProject/](https://tyler-beaver.github.io/codeProject/)
+- **Backend:** Hosted on Render at [https://codeproject-1dnl.onrender.com](https://codeproject-1dnl.onrender.com)
+- **Database:** Supabase Postgres (cloud-hosted)
+
 ## Configuration (.env)
 - Backend:
   - `PORT`, `BACKEND_URL`, `FRONTEND_URL`, `JWT_SECRET`
-  - `DATABASE_URL` (Supabase Postgres)
+  - `DATABASE_URL` (Supabase Postgres, with `?sslmode=require` for Render)
   - `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS` (optional; dev-safe)
   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`
 - Frontend:
-  - `REACT_APP_BACKEND_URL` (e.g., http://localhost:5001)
+  - `REACT_APP_BACKEND_URL` (e.g., https://codeproject-1dnl.onrender.com)
+  - Supabase keys for direct auth/db access
 
-## Running & Testing
+## Running & Testing (Local Dev)
 - Backend:
   1. `cd login-system/backend`
   2. `npm install`
@@ -72,6 +79,12 @@
   2. `npm install`
   3. `npm start`
 - In Profile, connect Gmail; in Dashboard, click “Sync Job Emails”.
+
+## Production Usage
+- Visit [https://tyler-beaver.github.io/codeProject/](https://tyler-beaver.github.io/codeProject/) for the live app.
+- All API calls route to the Render backend.
+- Google OAuth callback is handled at `/api/email/google/callback` on the Render backend (see Google Cloud Console for authorized redirect URIs).
+- Database is managed by Supabase; ensure Render DATABASE_URL uses `?sslmode=require` and Supabase allows external connections.
 
 ## Sync Diagnostics
 - Response includes:
