@@ -3,7 +3,7 @@
 Creating simple project components to test skills
 codeProject504$ database password
 
-link job postings to account work on accuracy, host on github
+link job postings to account work on accuracy
 
 
 ## Email Sync (Gmail)
