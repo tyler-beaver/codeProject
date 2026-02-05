@@ -507,8 +507,8 @@ async function findMatchingApplication(userId, companyHint, subject) {
 }
 
 function extractInterviewDateTime(text) {
-  const dateMatch = text.match(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}\b/i)
-    || text.match(/\b\d{4}-\d{2}-\d{2}\b/);
+  // Only accept YYYY-MM-DD for date
+  const dateMatch = text.match(/\b\d{4}-\d{2}-\d{2}\b/);
   const timeMatch = text.match(/\b\d{1,2}:\d{2}\s*(AM|PM)\b/i)
     || text.match(/\b\d{1,2}\s*(AM|PM)\b/i);
   return {
@@ -630,6 +630,8 @@ router.post("/sync", async (req, res) => {
         matched += 1;
       }
       const when = extractInterviewDateTime(`${subject} ${snippet} ${bodyText}`);
+      // Log every processed email
+      console.log(`[PROCESS] Email:`, { id, subject, from, status, confidence, interview_date: when.date, interview_time: when.time });
       // Update application status if precedence allows, and interview details
       const existingStatus = application.status || null;
       updateAttempts += 1;
