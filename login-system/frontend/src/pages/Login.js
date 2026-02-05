@@ -265,9 +265,9 @@ function Login({ setToken }) {
             )}
             <p style={styles.footer}>
               Don't have an account?{" "}
-              <a href="/register" style={styles.link}>
+              <Link to="/register" style={styles.link}>
                 Create one
-              </a>
+              </Link>
             </p>
           </div>
         </div>

@@ -199,9 +199,9 @@ function Register() {
             </form>
             <p style={styles.footer}>
               Already have an account?{" "}
-              <a href="/login" style={styles.link}>
+              <Link to="/login" style={styles.link}>
                 Sign in
-              </a>
+              </Link>
             </p>
           </div>
         </div>
