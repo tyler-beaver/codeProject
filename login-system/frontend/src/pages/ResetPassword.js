@@ -33,9 +33,14 @@ function ResetPassword() {
       if (session) setShowForm(true);
     });
 
-    // 3️⃣ Also support local dev: grab token from URL query params
+    // 3️⃣ Support both query param and hash fragment for token
     const params = new URLSearchParams(window.location.search);
-    const tokenFromURL = params.get("token");
+    let tokenFromURL = params.get("token");
+    if (!tokenFromURL && window.location.hash) {
+      // Parse hash fragment for access_token
+      const hashParams = new URLSearchParams(window.location.hash.slice(1).replace(/&/g, "&"));
+      tokenFromURL = hashParams.get("access_token");
+    }
     if (tokenFromURL) {
       setToken(tokenFromURL);
       setShowForm(true);
