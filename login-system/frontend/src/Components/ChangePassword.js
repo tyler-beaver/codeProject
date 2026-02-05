@@ -3,7 +3,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { supabase } from "../supabaseClient";
 
 function ChangePassword({ onClose, onSuccess }) {
-  const [oldPassword, setOldPassword] = useState("");
+  // Remove oldPassword, only need new password and confirm
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showOld, setShowOld] = useState(false);
@@ -20,26 +20,12 @@ function ChangePassword({ onClose, onSuccess }) {
       return;
     }
     setLoading(true);
-    try {
-      // Call backend change-password endpoint
-      const token = localStorage.getItem("token");
-      const res = await fetch("/api/auth/change-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ oldPassword, newPassword }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setMessage(data.error || "Failed to change password");
-      } else {
-        setMessage("Password changed successfully!");
-        if (onSuccess) onSuccess();
-      }
-    } catch (err) {
-      setMessage("Failed to change password: " + err.message);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      setMessage("Failed to change password: " + error.message);
+    } else {
+      setMessage("Password changed successfully!");
+      if (onSuccess) onSuccess();
     }
     setLoading(false);
   };
@@ -62,39 +48,6 @@ function ChangePassword({ onClose, onSuccess }) {
       }}
     >
       <form onSubmit={handleSubmit} style={{ width: "100%" }}>
-        <div style={{ position: "relative", marginBottom: 14 }}>
-          <input
-            type={showOld ? "text" : "password"}
-            placeholder="Current password"
-            value={oldPassword}
-            onChange={(e) => setOldPassword(e.target.value)}
-            required
-            style={{
-              width: "100%",
-              padding: "16px 18px",
-              fontSize: "1.08rem",
-              border: "1.5px solid #cbd5e1",
-              borderRadius: "10px",
-              boxSizing: "border-box",
-              fontFamily: "inherit",
-              transition: "all 0.2s",
-              outline: "none",
-              background: "#f8fafc",
-            }}
-          />
-          <span
-            onClick={() => setShowOld((v) => !v)}
-            style={{
-              position: "absolute",
-              right: 12,
-              top: 16,
-              cursor: "pointer",
-            }}
-            aria-label={showOld ? "Hide password" : "Show password"}
-          >
-            {showOld ? <FaEyeSlash /> : <FaEye />}
-          </span>
-        </div>
         <div style={{ position: "relative", marginBottom: 14 }}>
           <input
             type={showNew ? "text" : "password"}
