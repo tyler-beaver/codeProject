@@ -487,22 +487,34 @@ function extractCompany(fromHeader, subject) {
 }
 
 async function findMatchingApplication(userId, companyHint, subject) {
+  // Improved matching: require both company and role/title to match
   const { rows } = await pool.query(
     "SELECT id, name, description, status FROM applications WHERE user_id=$1",
     [userId]
   );
   const subj = (subject || "").toLowerCase();
   let match = null;
-  if (companyHint) {
-    match = rows.find((r) => (r.name || "").toLowerCase().includes(companyHint));
-  }
-  if (!match) {
-    // Fallback: subject contains the application name or description keyword
-    match = rows.find((r) => {
-      const n = (r.name || "").toLowerCase();
-      const d = (r.description || "").toLowerCase();
-      return (n && subj.includes(n)) || (d && d.length > 0 && subj.includes(d.split(" ")[0]));
-    });
+  for (const r of rows) {
+    const name = (r.name || "").toLowerCase();
+    const desc = (r.description || "").toLowerCase();
+    // Try to extract role from description (format: 'role — subject')
+    let role = null;
+    const dashIdx = desc.indexOf("—");
+    if (dashIdx !== -1) {
+      role = desc.substring(0, dashIdx).trim();
+    }
+    // Match if company and role both match
+    if (companyHint && name.includes(companyHint)) {
+      if (role && subj.includes(role)) {
+        match = r;
+        break;
+      }
+      // Fallback: if no role, match on company and subject
+      if (!role && subj.includes(name)) {
+        match = r;
+        break;
+      }
+    }
   }
   return match || null;
 }
