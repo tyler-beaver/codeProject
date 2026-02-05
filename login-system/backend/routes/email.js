@@ -350,13 +350,14 @@ function isLikelyJobEmail({ subject, body, from }) {
     /(interview|phone screen|onsite|assessment|coding challenge|take home)/i,
     /(offer|extend(ing)? an offer)/i,
     /(rejected|declined|not selected|not moving forward|no longer under consideration)/i,
+    /(schedule|availability|invite|next steps|consideration|hiring|confirmation|received|thanks|submitted|speak with you|shortlisted|additional information required)/i,
   ].some((re) => re.test(text));
   const hasNegative = NEGATIVE_TERMS.some((t) => text.includes(t));
   // LinkedIn special-case: require positive job signals
   const isLinkedIn = domain && domain.includes("linkedin.com");
   const providerOk = isLinkedIn ? positiveSignals : (hasProviderDomain || positiveSignals);
-  // Consider job-related if provider or signals AND not obviously social/marketing/receipts
-  return providerOk && !hasNegative;
+  // Loosen filter: allow if provider domain OR positive signals, even if some negative terms
+  return providerOk && !(hasNegative && !hasProviderDomain);
 }
 
 function extractDetails(subject, body, fromHeader) {
@@ -582,11 +583,19 @@ router.post("/sync", async (req, res) => {
       const bodyText = getBodyText(payload);
       const attachments = getAttachmentTypes(payload);
       // Filter out obvious non-job emails
-      if (!isLikelyJobEmail({ subject, body: bodyText, from })) { skipped += 1; reasonCounts.non_job += 1; continue; }
+      if (!isLikelyJobEmail({ subject, body: bodyText, from })) {
+        skipped += 1; reasonCounts.non_job += 1;
+        console.log(`[SKIP] Non-job email:`, { id, subject, from });
+        continue;
+      }
       // Scoring-based classification
       const domain = getDomainFromFromHeader(from);
       const { status, confidence } = scoreEmailStatus({ text: `${subject} ${bodyText}`, domain, attachments });
-      if (!status || confidence < 0.5) { skipped += 1; reasonCounts.low_confidence += 1; continue; }
+      if (!status || confidence < 0.3) {
+        skipped += 1; reasonCounts.low_confidence += 1;
+        console.log(`[SKIP] Low confidence:`, { id, subject, from, status, confidence });
+        continue;
+      }
       // Deduplicate by Gmail message id (stored as email_id)
       {
         const { rows: dupRows } = await pool.query(
