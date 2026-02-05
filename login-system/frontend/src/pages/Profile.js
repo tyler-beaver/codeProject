@@ -129,9 +129,20 @@ function Profile() {
                 You can now sync job application emails.
               </p>
               <button
-                  onClick={() => {
+                  onClick={async () => {
                     // Remove ?connected=google from the URL without reloading
                     window.history.replaceState(null, '', 'https://tyler-beaver.github.io/codeProject/#/profile');
+                    // Force refresh email status after Gmail connection
+                    if (user) {
+                      try {
+                        const backend = process.env.REACT_APP_BACKEND_URL || "http://localhost:5001";
+                        const resp = await fetch(`${backend}/api/email/status?userId=${encodeURIComponent(user.id)}`);
+                        const data = await resp.json();
+                        setEmailStatus(data || { connectedProviders: [] });
+                      } catch (e) {
+                        console.error("Fetch email status error", e);
+                      }
+                    }
                     window.location.replace('https://tyler-beaver.github.io/codeProject/#/profile');
                   }}
                 style={{
