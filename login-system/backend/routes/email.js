@@ -116,7 +116,7 @@ router.get("/google/callback", async (req, res) => {
       : null;
     // If no DB configured, skip save and redirect success for dev
     if (!process.env.DATABASE_URL) {
-      const redirect = `${process.env.FRONTEND_URL || "http://localhost:3000"}/#/email-confirmed?connected=google`;
+      const redirect = `${process.env.FRONTEND_URL || "http://localhost:3000"}/#/profile?connected=google`;
       return res.redirect(redirect);
     }
     try {
@@ -137,12 +137,12 @@ router.get("/google/callback", async (req, res) => {
       return res.redirect(redirect);
     } catch (dbErr) {
       console.error("Google OAuth DB save error:", dbErr?.message || dbErr);
-      const redirect = `${process.env.FRONTEND_URL || "http://localhost:3000"}/#/email-confirmed?error=db_save_failed`;
+      const redirect = `${process.env.FRONTEND_URL || "http://localhost:3000"}/#/profile?error=db_save_failed`;
       return res.redirect(redirect);
     }
   } catch (err) {
     console.error("Google OAuth callback error:", err);
-    const redirect = `${process.env.FRONTEND_URL || "http://localhost:3000"}/#/email-confirmed?error=oauth_failed`;
+    const redirect = `${process.env.FRONTEND_URL || "http://localhost:3000"}/#/profile?error=oauth_failed`;
     res.redirect(redirect);
   }
 });
