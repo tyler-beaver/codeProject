@@ -4,7 +4,9 @@ const pool = require("../db");
 const jwt = require("jsonwebtoken");
 const { google } = require("googleapis");
 
+// ===============================
 // Ensure required tables/columns exist (lightweight migration)
+// ===============================
 async function ensureSchema() {
   if (!process.env.DATABASE_URL) {
     console.warn("ensureSchema skipped: DATABASE_URL not set");
@@ -13,7 +15,6 @@ async function ensureSchema() {
   await pool.query(
     "ALTER TABLE applications ADD COLUMN IF NOT EXISTS status TEXT"
   );
-  // Migrate existing column type if previously created as INTEGER
   try {
     await pool.query(`
       ALTER TABLE email_accounts ALTER COLUMN user_id TYPE TEXT USING user_id::text
@@ -55,6 +56,9 @@ async function ensureSchema() {
 // Initialize schema on module load
 ensureSchema().catch((e) => console.error("ensureSchema error:", e));
 
+// ===============================
+// Google OAuth helpers
+// ===============================
 function buildOAuthClient() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -65,6 +69,7 @@ function buildOAuthClient() {
 function signState(payload) {
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "10m" });
 }
+
 function verifyState(token) {
   try {
     return jwt.verify(token, process.env.JWT_SECRET);
@@ -114,13 +119,11 @@ router.get("/google/callback", async (req, res) => {
     const expires = tokens.expiry_date
       ? new Date(tokens.expiry_date)
       : null;
-    // If no DB configured, skip save and redirect success for dev
     if (!process.env.DATABASE_URL) {
       const redirect = `${process.env.FRONTEND_URL || "http://localhost:3000"}/#/profile?connected=google`;
       return res.redirect(redirect);
     }
     try {
-      // Upsert by unique pair (user_id, provider)
       await pool.query(
         `
         INSERT INTO email_accounts (user_id, provider, access_token, refresh_token, token_expires_at)
@@ -162,19 +165,9 @@ async function getGoogleClientForUser(userId) {
   return oauth2Client;
 }
 
-function classifyEmail({ subject, snippet, body }) {
-  const text = `${subject || ""} ${snippet || ""} ${body || ""}`.toLowerCase();
-  // Offer
-  if (/(offer|congratulations|extend(ing)? an offer|we'd like to extend)/i.test(text)) return "Offer";
-  // Interview
-  if (/(interview|phone screen|onsite|schedule|availability|invite|set up a call)/i.test(text)) return "Interview";
-  // Rejected
-  if (/reject|declin|not selected|unfortunately|regret to inform|no longer under consideration|not moving forward|move forward with other candidates|won'?t be proceeding|unable to connect/i.test(text)) return "Rejected";
-  // Applied / Confirmation
-  if (/(application|applied|received|thanks for applying|confirmation|we received your application|your application has been submitted)/i.test(text)) return "Applied";
-  return null;
-}
-
+// ===============================
+// Helpers for text processing
+// ===============================
 function normalizeText(input) {
   return (input || "")
     .toLowerCase()
@@ -182,239 +175,6 @@ function normalizeText(input) {
     .replace(/[^a-z0-9&\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-function getAttachmentTypes(payload) {
-  const types = [];
-  const walk = (p) => {
-    if (!p) return;
-    if (p.mimeType) types.push(p.mimeType.toLowerCase());
-    if (p.parts && Array.isArray(p.parts)) {
-      p.parts.forEach((pp) => walk(pp));
-    }
-  };
-  walk(payload);
-  return types;
-}
-
-const STATUS_PRECEDENCE = { Rejected: 2, Applied: 1, Interview: 3, Offer: 4 };
-
-function shouldUpdateStatus(existingStatus, proposedStatus, confidence) {
-  if (!proposedStatus) return false;
-  if (!existingStatus) return true;
-  const current = STATUS_PRECEDENCE[existingStatus] || 0;
-  const next = STATUS_PRECEDENCE[proposedStatus] || 0;
-  // Never downgrade from Offer
-  if (existingStatus === "Offer" && next < STATUS_PRECEDENCE.Offer) return false;
-  // Allow strong Offer/Rejected even if same precedence
-  if ((proposedStatus === "Offer" || proposedStatus === "Rejected") && confidence >= 0.7) return true;
-  return next >= current;
-}
-
-function scoreEmailStatus({ text, domain, attachments }) {
-  const scores = { Applied: 0, Interview: 0, Rejected: 0, Offer: 0 };
-  const t = normalizeText(text);
-  // Applied
-  [
-    { re: /application received/, w: 0.9 },
-    { re: /thanks for applying/, w: 0.9 },
-    { re: /we received your application/, w: 0.9 },
-    { re: /has been submitted/, w: 0.8 },
-    { re: /under review/, w: 0.5 },
-    { re: /thank you for applying/, w: 0.8 },
-    { re: /we appreciate your interest/, w: 0.4 },
-  ].forEach(({ re, w }) => { if (re.test(t)) scores.Applied += w; });
-  // Interview
-  [
-    { re: /interview/, w: 0.8 },
-    { re: /phone screen/, w: 0.8 },
-    { re: /schedule (a )?(call|meeting)/, w: 0.7 },
-    { re: /availability/, w: 0.6 },
-    { re: /invite/, w: 0.6 },
-    { re: /assessment|coding challenge|take home/, w: 0.6 },
-    { re: /next steps/, w: 0.5 },
-    { re: /we d like to speak with you|we would like to speak with you/, w: 0.8 },
-    { re: /please select a time/, w: 0.6 },
-    { re: /moved to the next stage/, w: 0.6 },
-    { re: /excited to invite you/, w: 0.6 },
-    { re: /looking forward to speaking/, w: 0.6 },
-    { re: /shortlisted/, w: 0.6 },
-    { re: /additional information required/, w: 0.5 },
-  ].forEach(({ re, w }) => { if (re.test(t)) scores.Interview += w; });
-  // Rejected
-  [
-    { re: /we regret to inform/, w: 1.0 },
-    { re: /not moving forward/, w: 1.0 },
-    { re: /move forward with other candidates/, w: 1.0 },
-    { re: /no longer under consideration/, w: 1.0 },
-    { re: /won t be proceeding|won't be proceeding/, w: 0.9 },
-    { re: /declined|reject/, w: 0.8 },
-    { re: /unfortunately/, w: 0.7 },
-    { re: /after careful consideration/, w: 0.9 },
-    { re: /selected another candidate/, w: 0.9 },
-    { re: /thank you for your interest/, w: 0.4 },
-    { re: /we wish you the best/, w: 0.5 },
-  ].forEach(({ re, w }) => { if (re.test(t)) scores.Rejected += w; });
-  // Offer
-  [
-    { re: /offer/, w: 1.0 },
-    { re: /pleased to offer you the position/, w: 1.0 },
-    { re: /extend(ing)? an offer/, w: 1.0 },
-    { re: /offer letter/, w: 0.9 },
-    { re: /compensation/, w: 0.5 },
-    { re: /start date/, w: 0.7 },
-    { re: /welcome to/, w: 0.6 },
-    { re: /we are delighted to extend an offer/, w: 1.0 },
-    { re: /please find your offer letter attached/, w: 1.0 },
-  ].forEach(({ re, w }) => { if (re.test(t)) scores.Offer += w; });
-  // Domain boost (ATS domains imply Applied/Interview emails)
-  if (domain && JOB_PROVIDER_DOMAINS.some((d) => domain.includes(d))) {
-    scores.Applied += 0.1;
-    scores.Interview += 0.1;
-  }
-  // Attachment boost for Offer (PDF likely offer letter)
-  if ((attachments || []).some((mt) => mt.includes("application/pdf"))) {
-    scores.Offer += 0.2;
-  }
-  // Pick best
-  let status = null;
-  let confidence = 0;
-  Object.entries(scores).forEach(([k, v]) => {
-    if (v > confidence) { confidence = v; status = k; }
-  });
-  return { status, confidence };
-}
-
-const JOB_PROVIDER_DOMAINS = [
-  "indeed.com",
-  "linkedin.com",
-  "icims.com",
-  "workday.com",
-  "greenhouse.io",
-  "greenhousemail.io",
-  "lever.co",
-  "smartrecruiters.com",
-  "workable.com",
-  "jobvite.com",
-  "hackertrail.com",
-  "eightfold.ai",
-  "successfactors.com",
-  "myworkday.com",
-  "oraclecloud.com",
-];
-
-const NEGATIVE_TERMS = [
-  "newsletter",
-  "digest",
-  "blog",
-  "promo",
-  "promotion",
-  "marketing",
-  "password",
-  "reset your password",
-  "2fa",
-  "notification",
-  "receipt",
-  "invoice",
-  "order",
-  "tracking",
-  "shipment",
-  "ticket",
-  "issue",
-  "downtime",
-  "incident",
-  // Social/network noise
-  "viewed your profile",
-  "accepted your invitation",
-  "invitation",
-  "invite",
-  "connection",
-  "follower",
-  "follow",
-  "like",
-  "comment",
-];
-
-function getDomainFromFromHeader(fromHeader) {
-  const lower = (fromHeader || "").toLowerCase();
-  const domainMatch = lower.match(/@([a-z0-9.-]+)\b/);
-  return domainMatch ? domainMatch[1] : null;
-}
-
-function isLikelyJobEmail({ subject, body, from }) {
-  const text = `${subject || ""} ${body || ""}`.toLowerCase();
-  const domain = getDomainFromFromHeader(from);
-  const hasProviderDomain = domain && JOB_PROVIDER_DOMAINS.some((d) => domain.includes(d));
-  const positiveSignals = [
-    /(application|applied|candidate|position|role|job|opportunity|requisition|req\s?#?\d+)/i,
-    /(interview|phone screen|onsite|assessment|coding challenge|take home)/i,
-    /(offer|extend(ing)? an offer)/i,
-    /(rejected|declined|not selected|not moving forward|no longer under consideration)/i,
-  ].some((re) => re.test(text));
-  const hasNegative = NEGATIVE_TERMS.some((t) => text.includes(t));
-  // LinkedIn special-case: require positive job signals
-  const isLinkedIn = domain && domain.includes("linkedin.com");
-  const providerOk = isLinkedIn ? positiveSignals : (hasProviderDomain || positiveSignals);
-  // Consider job-related if provider or signals AND not obviously social/marketing/receipts
-  return providerOk && !hasNegative;
-}
-
-function extractDetails(subject, body, fromHeader) {
-  const s = subject || "";
-  const b = body || "";
-  const domain = getDomainFromFromHeader(fromHeader) || "";
-  // Company: prefer sender display/domain, else parse from subject
-  let company = extractCompany(fromHeader, subject);
-  if (!company && domain) {
-    company = domain.split(".")[0];
-  }
-  // Role/title patterns
-  const rolePatterns = [
-    /application for ([^,]+?)(?: at ([^,]+))?/i,
-    /your application (?:to|at) ([^,]+?) for ([^,]+?)(?:\.|,|$)/i,
-    /we received your application for ([^,]+?)(?: at ([^,]+))?/i,
-    /consideration for (.+?)(?: at ([^,]+))?(?:\.|,|$)/i,
-    /opening:?\s+(.+?)(?: at ([^,]+))?(?:\.|,|$)/i,
-  ];
-  let role = null;
-  let companyFromRole = null;
-  for (const re of rolePatterns) {
-    const m = s.match(re) || b.match(re);
-    if (m) {
-      role = (m[1] || "").trim();
-      companyFromRole = (m[2] || "").trim();
-      break;
-    }
-  }
-  if (!company && companyFromRole) company = companyFromRole.toLowerCase();
-  // Req ID
-  const reqMatch = (s + " " + b).match(/req\s?#?(\d{3,})/i);
-  const reqId = reqMatch ? reqMatch[1] : null;
-  // First link (often application portal)
-  const linkMatch = (b || "").match(/https?:\/\/\S+/i);
-  const link = linkMatch ? linkMatch[0] : null;
-  return { role, company, reqId, link };
-}
-
-function getDisplayName(fromHeader) {
-  // e.g., "GitHub Talent Acquisition <no-reply@github.com>"
-  const raw = (fromHeader || "").trim();
-  const angleIdx = raw.indexOf("<");
-  const display = angleIdx > 0 ? raw.substring(0, angleIdx).trim() : raw;
-  return display;
-}
-
-function sanitizeCompanyName(name) {
-  const n = (name || "").toLowerCase();
-  // Remove generic words
-  const cleaned = n
-    .replace(/(talent acquisition|careers|jobs|noreply|no-reply|support|mailer|notification|do[- ]?not[- ]?reply)/g, "")
-    .replace(/[^a-z0-9&\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  // Use first token as brand if reasonable
-  const token = cleaned.split(" ")[0] || "";
-  return token || cleaned;
 }
 
 function decodeBase64Url(data) {
@@ -438,71 +198,120 @@ function stripHtml(html) {
 function getBodyText(payload) {
   if (!payload) return "";
   const parts = payload.parts || [];
-  // Prefer text/plain
   const plainPart = parts.find((p) => (p.mimeType || "").toLowerCase() === "text/plain");
   if (plainPart && plainPart.body && plainPart.body.data) {
     return decodeBase64Url(plainPart.body.data);
   }
-  // Search recursively
   for (const part of parts) {
     if (part.parts && part.parts.length) {
       const nested = getBodyText(part);
       if (nested) return nested;
     }
   }
-  // Fallback to text/html
   const htmlPart = parts.find((p) => (p.mimeType || "").toLowerCase() === "text/html");
   if (htmlPart && htmlPart.body && htmlPart.body.data) {
     return stripHtml(decodeBase64Url(htmlPart.body.data));
   }
-  // Some messages have body on payload itself
   if (payload.body && payload.body.data) {
     return decodeBase64Url(payload.body.data);
   }
   return "";
 }
 
+function getAttachmentTypes(payload) {
+  const types = [];
+  const walk = (p) => {
+    if (!p) return;
+    if (p.mimeType) types.push(p.mimeType.toLowerCase());
+    if (p.parts && Array.isArray(p.parts)) {
+      p.parts.forEach((pp) => walk(pp));
+    }
+  };
+  walk(payload);
+  return types;
+}
+
+function getDomainFromFromHeader(fromHeader) {
+  const lower = (fromHeader || "").toLowerCase();
+  const domainMatch = lower.match(/@([a-z0-9.-]+)\b/);
+  return domainMatch ? domainMatch[1] : null;
+}
+
+function isLikelyJobEmail({ subject, body, from }) {
+  const text = `${subject || ""} ${body || ""}`.toLowerCase();
+  const domain = getDomainFromFromHeader(from);
+  const hasProviderDomain = domain && JOB_PROVIDER_DOMAINS.some((d) => domain.includes(d));
+  const positiveSignals = [
+    /(application|applied|candidate|position|role|job|opportunity|requisition|req\s?#?\d+)/i,
+    /(interview|phone screen|onsite|assessment|coding challenge|take home)/i,
+    /(offer|extend(ing)? an offer)/i,
+    /(rejected|declined|not selected|not moving forward|no longer under consideration)/i,
+  ].some((re) => re.test(text));
+  const hasNegative = NEGATIVE_TERMS.some((t) => text.includes(t));
+  const isLinkedIn = domain && domain.includes("linkedin.com");
+  const providerOk = isLinkedIn ? positiveSignals : (hasProviderDomain || positiveSignals);
+  return providerOk && !hasNegative;
+}
+
 function extractCompany(fromHeader, subject) {
   const from = (fromHeader || "").toLowerCase();
   const subj = (subject || "").toLowerCase();
-  // Try domain as company indicator
   const domainMatch = from.match(/@([a-z0-9.-]+)\b/);
   const domain = domainMatch ? domainMatch[1] : null;
-  let companyHint = null;
-  if (domain) {
-    companyHint = domain.split(".")[0];
-  }
-  // fallback: first capitalized word in subject
+  let companyHint = domain ? domain.split(".")[0] : null;
   const titleWord = (subject || "").match(/\b([A-Z][a-zA-Z0-9&]+)/);
   if (!companyHint && titleWord) companyHint = titleWord[1].toLowerCase();
-  // prefer display name leading token
   if (!companyHint) {
     const display = getDisplayName(fromHeader);
-    const sanitized = sanitizeCompanyName(display);
-    if (sanitized) companyHint = sanitized;
+    companyHint = sanitizeCompanyName(display);
   }
   return companyHint;
 }
 
-async function findMatchingApplication(userId, companyHint, subject) {
-  const { rows } = await pool.query(
-    "SELECT id, name, description, status FROM applications WHERE user_id=$1",
-    [userId]
-  );
-  const subj = (subject || "").toLowerCase();
-  let match = null;
-  if (companyHint) {
-    match = rows.find((r) => (r.name || "").toLowerCase().includes(companyHint));
+function getDisplayName(fromHeader) {
+  const raw = (fromHeader || "").trim();
+  const angleIdx = raw.indexOf("<");
+  return angleIdx > 0 ? raw.substring(0, angleIdx).trim() : raw;
+}
+
+function sanitizeCompanyName(name) {
+  const n = (name || "").toLowerCase();
+  const cleaned = n
+    .replace(/(talent acquisition|careers|jobs|noreply|no-reply|support|mailer|notification|do[- ]?not[- ]?reply)/g, "")
+    .replace(/[^a-z0-9&\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const token = cleaned.split(" ")[0] || "";
+  return token || cleaned;
+}
+
+function extractDetails(subject, body, fromHeader) {
+  const s = subject || "";
+  const b = body || "";
+  const domain = getDomainFromFromHeader(fromHeader) || "";
+  let company = extractCompany(fromHeader, subject);
+  let role = null;
+  const rolePatterns = [
+    /application for ([^,]+?)(?: at ([^,]+))?/i,
+    /your application (?:to|at) ([^,]+?) for ([^,]+?)(?:\.|,|$)/i,
+    /we received your application for ([^,]+?)(?: at ([^,]+))?/i,
+    /consideration for (.+?)(?: at ([^,]+))?(?:\.|,|$)/i,
+    /opening:?\s+(.+?)(?: at ([^,]+))?(?:\.|,|$)/i,
+  ];
+  for (const re of rolePatterns) {
+    const m = s.match(re) || b.match(re);
+    if (m) {
+      role = (m[1] || "").trim();
+      const companyFromRole = (m[2] || "").trim();
+      if (!company && companyFromRole) company = companyFromRole;
+      break;
+    }
   }
-  if (!match) {
-    // Fallback: subject contains the application name or description keyword
-    match = rows.find((r) => {
-      const n = (r.name || "").toLowerCase();
-      const d = (r.description || "").toLowerCase();
-      return (n && subj.includes(n)) || (d && d.length > 0 && subj.includes(d.split(" ")[0]));
-    });
-  }
-  return match || null;
+  const reqMatch = (s + " " + b).match(/req\s?#?(\d{3,})/i);
+  const reqId = reqMatch ? reqMatch[1] : null;
+  const linkMatch = (b || "").match(/https?:\/\/\S+/i);
+  const link = linkMatch ? linkMatch[0] : null;
+  return { role, company, reqId, link };
 }
 
 function extractInterviewDateTime(text) {
@@ -516,176 +325,182 @@ function extractInterviewDateTime(text) {
   };
 }
 
-// POST /api/email/sync?userId=123
-router.post("/sync", async (req, res) => {
-  const { userId } = req.query;
-  if (!userId) return res.status(400).json({ error: "userId required" });
+// ===============================
+// Job email constants
+// ===============================
+const JOB_PROVIDER_DOMAINS = [
+  "indeed.com","linkedin.com","icims.com","workday.com","greenhouse.io","greenhousemail.io",
+  "lever.co","smartrecruiters.com","workable.com","jobvite.com","hackertrail.com",
+  "eightfold.ai","successfactors.com","myworkday.com","oraclecloud.com",
+];
+
+const NEGATIVE_TERMS = [
+  "newsletter","digest","blog","promo","promotion","marketing","password",
+  "reset your password","2fa","notification","receipt","invoice","order","tracking",
+  "shipment","ticket","issue","downtime","incident","viewed your profile","accepted your invitation",
+  "invitation","connection","follower","follow","like","comment",
+];
+
+// ===============================
+// Enhanced Email Classifier
+// ===============================
+const PHRASES = {
+  Applied: [
+    [/application received/i, 0.9],[ /thanks for applying/i,0.9],[ /we received your application/i,0.9],
+    [/has been submitted/i,0.8],[ /under review/i,0.8],[ /thank you for submitting/i,0.8],
+    [/our team will review/i,0.7],[ /you will hear from us/i,0.5],
+  ],
+  Interview: [
+    [/interview/i,0.8],[ /phone screen/i,0.8],[ /assessment|coding challenge|take home/i,0.7],
+    [/schedule (a )?(call|meeting)/i,0.7],[ /availability/i,0.6],[ /move forward/i,1.0],
+    [/next round|next step/i,0.9],[ /advance to the next/i,0.9],[ /invite you to continue/i,0.8],
+    [/meet with our team/i,0.8],[ /speak with our hiring manager/i,0.9],[ /schedule a time to chat/i,0.8],
+    [/looking forward to speaking/i,0.7],
+  ],
+  Rejected: [
+    [/we regret to inform/i,1.0],[ /not moving forward/i,1.0],[ /not advancing your application/i,1.0],
+    [/decided not to proceed/i,1.0],[ /moving ahead with other applicants/i,1.0],[ /selected another candidate/i,0.9],
+    [/position has been filled/i,0.8],[ /unable to offer you/i,1.0],[ /not the right fit/i,0.8],
+    [/we encourage you to apply again/i,0.7],[ /keep your resume on file/i,0.6],[ /unfortunately/i,0.7],
+  ],
+  Offer: [
+    [/offer/i,1.0],[ /formal offer/i,1.0],[ /employment offer/i,1.0],[ /excited to offer you/i,1.0],
+    [/extend(ing)? an offer/i,1.0],[ /offer letter/i,0.9],[ /salary and benefits/i,0.8],[ /sign and return/i,0.9],
+    [/start date/i,0.7],
+  ],
+};
+
+const STRONG_SIGNALS = {
+  Interview: [/move forward/i, /next round/i],
+  Rejected: [/unable to offer/i, /not moving forward/i],
+  Offer: [/formal offer/i, /employment offer/i],
+};
+
+function scoreEmailStatus({ text, domain, attachments }) {
+  const t = normalizeText(text);
+  const scores = { Applied:0, Interview:0, Rejected:0, Offer:0 };
+
+  // Base phrase scoring
+  Object.entries(PHRASES).forEach(([status, patterns]) => {
+    patterns.forEach(([regex, weight]) => {
+      if(regex.test(t)) scores[status] += weight;
+    });
+  });
+
+  // Strong signal boost
+  Object.entries(STRONG_SIGNALS).forEach(([status, patterns])=>{
+    if(patterns.some(re=>re.test(t))) scores[status] +=1.2;
+  });
+
+  // Combo logic
+  if(t.includes("unfortunately") && t.includes("thank you")) scores.Rejected += 0.8;
+
+  // Domain boost
+  if(domain && JOB_PROVIDER_DOMAINS.some(d=>domain.includes(d))) {
+    scores.Applied += 0.1;
+    scores.Interview += 0.1;
+  }
+
+  // PDF boost
+  if((attachments||[]).some(a=>a.includes("application/pdf"))) scores.Offer += 0.3;
+
+  // Pick best
+  let bestStatus=null, bestScore=0;
+  Object.entries(scores).forEach(([status, score])=>{
+    if(score>bestScore){bestScore=score; bestStatus=status;}
+  });
+
+  return { status: bestStatus, confidence: Math.min(bestScore/2,1) };
+}
+
+// Optional AI fallback
+async function classifyWithAI(text) {
+  if(!process.env.OPENAI_API_KEY) return null;
+  const { OpenAI } = require("openai");
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   try {
-    const oauth2Client = await getGoogleClientForUser(userId);
-    if (!oauth2Client) return res.status(400).json({ error: "No connected Google account" });
-    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-    // Allow tuning via query params
-    const days = Math.max(1, Math.min(1825, Number(req.query.days) || 365));
-    const maxScan = Math.max(50, Math.min(2000, Number(req.query.max) || 500));
-    const buildQueries = (d) => {
-      const baseKeywords = "application OR applied OR confirmation OR candidate OR position OR role OR job OR opportunity OR interview OR offer OR reject OR declined OR \"not moving forward\" OR \"no longer under consideration\" OR \"not selected\"";
-      const atsDomains = "indeed.com OR linkedin.com OR icims.com OR workday.com OR greenhouse.io OR lever.co OR smartrecruiters.com OR workable.com OR jobvite.com OR greenhousemail.io";
-      const q1 = [
-        `newer_than:${d}d`,
-        "(",
-        baseKeywords,
-        ")",
-        `OR from:(${atsDomains})`,
-      ].join(" ");
-      // Fallback broader query: include anywhere and wider keyword net
-      const q2 = [
-        `in:anywhere newer_than:${Math.min(d * 2, 1825)}d`,
-        "(",
-        baseKeywords,
-        "OR hiring OR next steps OR consideration OR schedule",
-        ")",
-      ].join(" ");
-      return [q1, q2];
-    };
-    const queriesUsed = [];
-    const idSet = new Set();
-    for (const q of buildQueries(days)) {
-      queriesUsed.push(q);
-      let pageToken = undefined;
-      do {
-        const list = await gmail.users.messages.list({ userId: "me", q, maxResults: 200, pageToken });
-        (list.data.messages || []).forEach((m) => idSet.add(m.id));
-        pageToken = list.data.nextPageToken;
-      } while (pageToken && idSet.size < maxScan);
-      if (idSet.size >= maxScan) break;
+    const res = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "Classify job emails into Applied, Interview, Rejected, Offer, Other. Respond JSON." },
+        { role: "user", content: text.slice(0,3000) }
+      ],
+      response_format: { type:"json_object" },
+    });
+    return JSON.parse(res.choices[0].message.content);
+  } catch {
+    return null;
+  }
+}
+
+// ===============================
+// Main Gmail Sync Function
+// ===============================
+async function syncGmailEmailsForUser(userId) {
+  const oauthClient = await getGoogleClientForUser(userId);
+  if(!oauthClient) return console.warn("No Google account linked for user", userId);
+
+  const gmail = google.gmail({ version:"v1", auth:oauthClient });
+  let res;
+  try { res = await gmail.users.messages.list({ userId:"me", maxResults:50 }); }
+  catch(e){ return console.error("Gmail list error:", e.message||e); }
+  const messages = res.data.messages || [];
+
+  let skipped=0, reasonCounts={low_confidence:0, missing_body:0};
+
+  for(const msg of messages) {
+    let detail;
+    try { detail = await gmail.users.messages.get({ userId:"me", id:msg.id }); }
+    catch(e){ console.error("Gmail get msg error", e.message||e); continue; }
+
+    const payload = detail.data.payload || {};
+    const headers = payload.headers || [];
+    const subjectObj = headers.find(h=>h.name.toLowerCase()==="subject");
+    const fromObj = headers.find(h=>h.name.toLowerCase()==="from");
+    const subject = subjectObj?.value || "";
+    const from = fromObj?.value || "";
+    const bodyText = getBodyText(payload);
+    const attachments = getAttachmentTypes(payload);
+    const domain = getDomainFromFromHeader(from);
+
+    if(!bodyText) { skipped++; reasonCounts.missing_body++; continue; }
+
+    let { status, confidence } = scoreEmailStatus({ text: `${subject} ${bodyText}`, domain, attachments });
+
+    if(confidence>0.3 && confidence<0.7) {
+      const aiRes = await classifyWithAI(`${subject}\n${bodyText}`);
+      if(aiRes && aiRes.status && aiRes.confidence>confidence) {
+        status = aiRes.status;
+        confidence = aiRes.confidence;
+      }
     }
-    const ids = Array.from(idSet);
-    let processed = 0;
-    let created = 0;
-    let updated = 0;
-    let skipped = 0;
-    let matched = 0;
-    let updateAttempts = 0;
-    let updateBlockedPrecedence = 0;
-    let updateNoChange = 0;
-    let creationErrors = 0;
-    const reasonCounts = { non_job: 0, low_confidence: 0, duplicate: 0 };
-    for (const id of ids) {
-      const msg = await gmail.users.messages.get({ userId: "me", id });
-      const payload = msg.data.payload || {};
-      const headers = payload.headers || [];
-      const header = (name) => headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value || null;
-      const subject = header("Subject") || "";
-      const from = header("From") || "";
-      const messageId = header("Message-Id") || header("Message-ID") || null;
-      const snippet = msg.data.snippet || "";
-      const bodyText = getBodyText(payload);
-      const attachments = getAttachmentTypes(payload);
-      // Filter out obvious non-job emails
-      if (!isLikelyJobEmail({ subject, body: bodyText, from })) { skipped += 1; reasonCounts.non_job += 1; continue; }
-      // Scoring-based classification
-      const domain = getDomainFromFromHeader(from);
-      const { status, confidence } = scoreEmailStatus({ text: `${subject} ${bodyText}`, domain, attachments });
-      if (!status || confidence < 0.5) { skipped += 1; reasonCounts.low_confidence += 1; continue; }
-      // Deduplicate by Gmail message id (stored as email_id)
-      {
-        const { rows: dupRows } = await pool.query(
-          "SELECT 1 FROM application_status_updates WHERE email_id=$1 LIMIT 1",
-          [id]
-        );
-        if (dupRows.length > 0) { skipped += 1; reasonCounts.duplicate += 1; continue; }
-      }
-      const companyHint = extractCompany(from, subject);
-      let application = await findMatchingApplication(userId, companyHint, subject);
-      const details = extractDetails(subject, bodyText, from);
-      if (!application) {
-        // Create a new application if none matched
-        const inferredName = (details.company || companyHint || "").trim() || (subject || "").split("-")[0].trim() || "Unknown Company";
-        const inferredDesc = (details.role ? `${details.role} — ` : "") + (subject || "").trim();
-        try {
-          const insertRes = await pool.query(
-            "INSERT INTO applications (user_id, name, description, status, interview_date, interview_time) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, status",
-            [userId, inferredName, inferredDesc, status, null, null]
-          );
-          application = insertRes.rows[0];
-          created += 1;
-        } catch (e) {
-          creationErrors += 1;
-          // If creation fails, skip logging update to avoid orphan status_updates
-          skipped += 1;
-          continue;
-        }
-      } else {
-        matched += 1;
-      }
-      const when = extractInterviewDateTime(`${subject} ${snippet} ${bodyText}`);
-      // Update application status if precedence allows, and interview details
-      const existingStatus = application.status || null;
-      updateAttempts += 1;
-      if (shouldUpdateStatus(existingStatus, status, confidence)) {
-        const updRes = await pool.query(
-          "UPDATE applications SET status=$1, interview_date=COALESCE($2, interview_date), interview_time=COALESCE($3, interview_time) WHERE id=$4",
-          [status, when.date, when.time, application.id]
-        );
-        if ((updRes.rowCount || 0) > 0) {
-          updated += 1;
-        } else {
-          updateNoChange += 1;
-        }
-      } else {
-        updateBlockedPrecedence += 1;
-      }
-      const snippetToStore = (bodyText || snippet || "").slice(0, 500);
+
+    if(!status || confidence<0.5) { skipped++; reasonCounts.low_confidence++; continue; }
+
+    const details = extractDetails(subject, bodyText, from);
+    const interview = extractInterviewDateTime(bodyText);
+
+    console.log({ subject, predicted:status, confidence });
+
+    try {
       await pool.query(
-        `INSERT INTO application_status_updates (application_id, status, email_id, subject, body_snippet, occurred_at)
-         VALUES ($1, $2, $3, $4, $5, NOW())`,
-        [application.id, status, id, subject, snippetToStore]
+        `INSERT INTO application_status_updates
+        (application_id, status, source, email_id, subject, body_snippet, occurred_at)
+        VALUES ($1,$2,'email',$3,$4,$5,NOW())`,
+        [null, status, msg.id, subject, bodyText.slice(0,200)]
       );
-      processed += 1;
-    }
-    res.json({ processed, total: ids.length, created, updated, skipped, matched, updateAttempts, updateBlockedPrecedence, updateNoChange, creationErrors, reasonCounts, queriesUsed, scanWindowDays: days });
-  } catch (err) {
-    console.error("Email sync error:", err);
-    res.status(500).json({ error: "Failed to sync emails" });
+    } catch(e){ console.error("DB insert error:", e.message||e); }
   }
-});
 
-// GET /api/email/status?userId=123
-router.get("/status", async (req, res) => {
-  const { userId } = req.query;
-  if (!userId) return res.status(400).json({ error: "userId required" });
-  if (!process.env.DATABASE_URL) {
-    return res.json({ connectedProviders: [] });
-  }
-  try {
-    const { rows } = await pool.query(
-      "SELECT provider FROM email_accounts WHERE user_id=$1",
-      [userId]
-    );
-    res.json({ connectedProviders: rows.map((r) => r.provider) });
-  } catch (err) {
-    console.error("Email status error:", err);
-    res.status(500).json({ error: "Failed to fetch email status" });
-  }
-});
+  console.log(`Sync finished. Skipped: ${skipped}`, reasonCounts);
+}
 
-// DELETE /api/email/google?userId=123
-router.delete("/google", async (req, res) => {
-  const { userId } = req.query;
-  if (!userId) return res.status(400).json({ error: "userId required" });
-  if (!process.env.DATABASE_URL) {
-    return res.status(400).json({ error: "Database not configured" });
-  }
-  try {
-    await pool.query(
-      "DELETE FROM email_accounts WHERE user_id=$1 AND provider='google'",
-      [userId]
-    );
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Email disconnect error:", err);
-    res.status(500).json({ error: "Failed to disconnect Google" });
-  }
-});
-
-module.exports = router;
+// ===============================
+// Expose router and sync
+// ===============================
+module.exports = {
+  router,
+  syncGmailEmailsForUser,
+  scoreEmailStatus,
+  classifyWithAI,
+};
