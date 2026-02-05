@@ -612,16 +612,18 @@ router.post("/sync", async (req, res) => {
         const inferredName = (details.company || companyHint || "").trim() || (subject || "").split("-")[0].trim() || "Unknown Company";
         const inferredDesc = (details.role ? `${details.role} — ` : "") + (subject || "").trim();
         try {
+          console.log(`[CREATE] Attempting to create application:`, { userId, inferredName, inferredDesc, status });
           const insertRes = await pool.query(
             "INSERT INTO applications (user_id, name, description, status, interview_date, interview_time) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, status",
             [userId, inferredName, inferredDesc, status, null, null]
           );
           application = insertRes.rows[0];
           created += 1;
+          console.log(`[CREATE] Success:`, application);
         } catch (e) {
           creationErrors += 1;
-          // If creation fails, skip logging update to avoid orphan status_updates
           skipped += 1;
+          console.error(`[CREATE] Error:`, e?.message || e);
           continue;
         }
       } else {
