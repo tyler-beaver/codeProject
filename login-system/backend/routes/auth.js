@@ -86,7 +86,8 @@ router.post("/request-password-reset", async (req, res) => {
       [token, user.id],
     );
     console.log("Reset token update result:", updateResult.rows);
-    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password?token=${token}`;
+    // Supabase expects a hash fragment for recovery links
+    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/#type=recovery&access_token=${token}`;
     await transporter.sendMail({
       to: email,
       subject: "Password Reset",
