@@ -20,13 +20,26 @@ function ChangePassword({ onClose, onSuccess }) {
       return;
     }
     setLoading(true);
-    // Supabase password change
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) {
-      setMessage("Failed to change password: " + error.message);
-    } else {
-      setMessage("Password changed successfully!");
-      if (onSuccess) onSuccess();
+    try {
+      // Call backend change-password endpoint
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ oldPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error || "Failed to change password");
+      } else {
+        setMessage("Password changed successfully!");
+        if (onSuccess) onSuccess();
+      }
+    } catch (err) {
+      setMessage("Failed to change password: " + err.message);
     }
     setLoading(false);
   };
