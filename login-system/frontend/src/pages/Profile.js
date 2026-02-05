@@ -202,41 +202,27 @@ function Profile() {
                 Change Password
               </button>
               <div style={{ marginTop: 12 }}>
-                {emailStatus.connectedProviders?.includes("google") ? (
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <span style={{ color: "#16a34a", fontWeight: 700 }}>Google connected</span>
-                    <button
-                      onClick={disconnectGmail}
-                      style={{
-                        background: "#ef4444",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 6,
-                        padding: "6px 12px",
-                        fontWeight: 700,
-                        cursor: "pointer",
-                      }}
-                    >
-                      Disconnect
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={connectGmail}
-                    style={{
-                      background: "#ef4444",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: 6,
-                      padding: "8px 18px",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
-                    disabled={connecting}
-                  >
-                    {connecting ? "Connecting..." : "Connect Gmail"}
-                  </button>
-                )}
+                <button
+                  onClick={emailStatus.connectedProviders?.includes("google") ? disconnectGmail : connectGmail}
+                  style={{
+                    background: emailStatus.connectedProviders?.includes("google") ? "#16a34a" : "#ef4444",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "8px 18px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    minWidth: 140,
+                    transition: "background 0.2s",
+                  }}
+                  disabled={connecting}
+                >
+                  {emailStatus.connectedProviders?.includes("google")
+                    ? "Google Connected"
+                    : connecting
+                    ? "Connecting..."
+                    : "Connect Gmail"}
+                </button>
               </div>
             </div>
             {showChange && (
