@@ -13,6 +13,7 @@ async function ensureSchema() {
 
   await pool.query("ALTER TABLE applications ADD COLUMN IF NOT EXISTS status TEXT");
   await pool.query("ALTER TABLE email_accounts ADD COLUMN IF NOT EXISTS last_email_id TEXT");
+  await pool.query("ALTER TABLE email_accounts ADD COLUMN IF NOT EXISTS last_email_internaldate TEXT");
 
   try {
     await pool.query(`
@@ -212,7 +213,6 @@ async function syncGmailEmailsForUser(userId) {
   const gmail = google.gmail({ version: "v1", auth: oauthClient });
 
 
-  // Fetch last_email_id and last_email_internaldate
   const { rows: acctRows } = await pool.query(
     "SELECT last_email_id, last_email_internaldate FROM email_accounts WHERE user_id=$1 AND provider='google'",
     [userId]
@@ -233,7 +233,6 @@ async function syncGmailEmailsForUser(userId) {
     // Gmail 'after:' only works with epoch seconds (internalDate), not message ID
     let q = undefined;
     if (lastEmailInternalDate) {
-      // Use internalDate (epoch seconds)
       const afterEpoch = Math.floor(Number(lastEmailInternalDate) / 1000);
       q = `after:${afterEpoch}`;
     }
@@ -245,7 +244,7 @@ async function syncGmailEmailsForUser(userId) {
       })
     );
     messages = listRes.data.messages || [];
-    console.log("Fetched message IDs:", messages.map(m => m.id));
+    console.log("[SYNC] Gmail fetched message IDs:", messages.map(m => m.id));
   } catch (e) { console.error("Failed to list Gmail messages:", e.message||e); return; }
 
 
@@ -272,21 +271,23 @@ async function syncGmailEmailsForUser(userId) {
       newestInternalDate = internalDate;
     }
 
+    console.log(`[SYNC] Processing email:`, { id: msg.id, subject, from });
+
     if(!isLikelyJobEmail({ subject, body:bodyText, from })){
       skipped++; reasonCounts.non_job++;
-      console.log("Skipped non-job email:", { subject, from, id: msg.id });
+      console.log(`[SYNC] Skipped non-job email:`, { id: msg.id, subject, from });
       continue;
     }
     if(!bodyText){
       skipped++; reasonCounts.missing_body++;
-      console.log("Skipped missing body:", { subject, from, id: msg.id });
+      console.log(`[SYNC] Skipped missing body:`, { id: msg.id, subject, from });
       continue;
     }
 
     let { status, confidence } = scoreEmailStatus({ text:`${subject} ${bodyText}`, domain, attachments });
     if(!status || confidence<0.5){
       skipped++; reasonCounts.low_confidence++;
-      console.log("Skipped low confidence:", { subject, from, id: msg.id, status, confidence });
+      console.log(`[SYNC] Skipped low confidence:`, { id: msg.id, subject, from, status, confidence });
       continue;
     }
 
@@ -301,6 +302,7 @@ async function syncGmailEmailsForUser(userId) {
           [userId, details.company||"Unknown Company", details.role||subject, status, interview.date, interview.time]
         );
         application = insertRes.rows[0];
+        console.log(`[SYNC] Created new application:`, { id: application.id, company: details.company, role: details.role, status });
       } catch(e){ console.error("Failed to create application:", e.message||e); skipped++; continue; }
     }
 
@@ -309,6 +311,7 @@ async function syncGmailEmailsForUser(userId) {
         "UPDATE applications SET status=$1,interview_date=COALESCE($2,interview_date),interview_time=COALESCE($3,interview_time) WHERE id=$4",
         [status, interview.date, interview.time, application.id]
       );
+      console.log(`[SYNC] Updated application status:`, { id: application.id, status });
     }
 
     await pool.query(
@@ -316,6 +319,7 @@ async function syncGmailEmailsForUser(userId) {
        VALUES ($1,$2,'email',$3,$4,$5,NOW())`,
       [application.id, status, msg.id, subject, bodyText.slice(0,200)]
     );
+    console.log(`[SYNC] Added status update for application:`, { applicationId: application.id, status });
   }
 
   if(newestEmailId && newestInternalDate){
