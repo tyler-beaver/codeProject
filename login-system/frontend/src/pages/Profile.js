@@ -129,7 +129,11 @@ function Profile() {
                 You can now sync job application emails.
               </p>
               <button
-                  onClick={() => window.location.replace("https://tyler-beaver.github.io/codeProject/#/profile")}
+                  onClick={() => {
+                    // Remove ?connected=google from the URL without reloading
+                    window.history.replaceState(null, '', 'https://tyler-beaver.github.io/codeProject/#/profile');
+                    window.location.replace('https://tyler-beaver.github.io/codeProject/#/profile');
+                  }}
                 style={{
                   marginTop: 8,
                   background: "linear-gradient(90deg,#2563eb,#3b82f6)",
