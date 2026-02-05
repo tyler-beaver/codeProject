@@ -17,14 +17,14 @@ function Navbar({ token, setToken }) {
   return (
     <nav style={styles.navbar}>
       <div style={styles.navContainer}>
-        <Link to="/codeProject/#/" style={styles.logo}>
+        <Link to="/" style={styles.logo}>
           <span style={styles.logoIcon}>🎯</span>
           <span style={{ letterSpacing: "1px" }}>JobTracker</span>
         </Link>
         <div style={styles.navLinks}>
           {!token && (
             <Link
-              to="/codeProject/#/"
+              to="/"
               style={styles.navLink}
               onMouseEnter={(e) => (e.target.style.color = "#2563eb")}
               onMouseLeave={(e) => (e.target.style.color = "#4b5563")}
@@ -34,7 +34,7 @@ function Navbar({ token, setToken }) {
           )}
           {token && (
             <Link
-              to="/codeProject/#/dashboard"
+              to="/dashboard"
               style={styles.navLink}
               onMouseEnter={(e) => (e.target.style.color = "#2563eb")}
               onMouseLeave={(e) => (e.target.style.color = "#4b5563")}
@@ -45,7 +45,7 @@ function Navbar({ token, setToken }) {
           {!token && (
             <>
               <Link
-                to="/codeProject/#/login"
+                to="/login"
                 style={styles.navLink}
                 onMouseEnter={(e) => (e.target.style.color = "#2563eb")}
                 onMouseLeave={(e) => (e.target.style.color = "#4b5563")}
@@ -53,7 +53,7 @@ function Navbar({ token, setToken }) {
                 Sign In
               </Link>
               <Link
-                to="/codeProject/#/register"
+                to="/register"
                 style={{ ...styles.navLink, ...styles.signUpBtn }}
                 onMouseEnter={(e) =>
                   (e.target.style.background =
