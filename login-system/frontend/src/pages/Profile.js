@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 // ...existing code...
 import ChangePassword from "../components/ChangePassword";
 
 function Profile() {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const gmailJustConnected = params.get("connected") === "google";
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -86,6 +90,65 @@ function Profile() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
+        {gmailJustConnected && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(0,0,0,0.18)",
+              zIndex: 3000,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: 18,
+                boxShadow: "0 8px 32px 0 rgba(59,130,246,0.13)",
+                padding: "48px 48px 36px 48px",
+                minWidth: 340,
+                maxWidth: 400,
+                width: "100%",
+                fontFamily: "inherit",
+                position: "relative",
+                border: "1.5px solid #e5e7eb",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                textAlign: "center",
+              }}
+            >
+              <h2 style={{ marginTop: 0, color: "#16a34a" }}>Gmail Connected!</h2>
+              <p style={{ color: "#475569", marginBottom: 24, fontSize: "1.08rem" }}>
+                Your Gmail account has been successfully connected.<br />
+                You can now sync job application emails.
+              </p>
+              <button
+                onClick={() => window.location.replace("/profile")}
+                style={{
+                  marginTop: 8,
+                  background: "linear-gradient(90deg,#2563eb,#3b82f6)",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "10px 24px",
+                  color: "#fff",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontSize: "1.05rem",
+                  textDecoration: "none",
+                  boxShadow: "0 2px 8px 0 rgba(59,130,246,0.10)",
+                }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        )}
         {loading ? (
           <div>Loading...</div>
         ) : error ? (
