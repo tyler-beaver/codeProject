@@ -10,11 +10,8 @@ function ForgotPassword({ onSent }) {
     e.preventDefault();
     setLoading(true);
     setMessage("");
-    // Use dynamic redirect URL for Supabase password reset
-    const redirectUrl =
-      typeof window !== "undefined"
-        ? `${window.location.origin}/reset-password`
-        : undefined;
+    // Use GitHub Pages URL for Supabase password reset
+    const redirectUrl = "https://tyler-beaver.github.io/codeProject/#/reset-password";
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,
     });
