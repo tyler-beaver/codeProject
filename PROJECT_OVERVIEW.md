@@ -1,4 +1,23 @@
-# Project Overview: JobTracker Login System
+
+# Tech Stack, Hosting, and Accounts
+
+## Tech Stack
+- **Frontend:** React (Create React App), Tailwind CSS, React Router, Supabase JS client
+- **Backend:** Node.js, Express, Nodemailer, Google APIs (OAuth2, Gmail), JWT, PostgreSQL (pg)
+- **Database:** Supabase (PostgreSQL managed cloud DB)
+- **Other:** Axios, dotenv, Postman (for API testing)
+
+## Hosting & Deployment
+- **Frontend:** GitHub Pages ([https://tyler-beaver.github.io/codeProject/](https://tyler-beaver.github.io/codeProject/))
+- **Backend:** Render ([https://codeproject-1dnl.onrender.com](https://codeproject-1dnl.onrender.com))
+- **Database:** Supabase (cloud-hosted Postgres)
+
+## Accounts & Cloud Services
+- **GitHub:** tyler-beaver/codeProject (source code, GitHub Pages)
+- **Supabase:** Project for Postgres DB and authentication
+- **Google Cloud:** OAuth 2.0 Client for Gmail integration (APIs & Services > Credentials)
+- **Render:** Node.js backend hosting
+
 
 ## What’s New
 - **Gmail Connect + Sync:** Users can link Gmail and automatically import job-related emails. The system classifies Applied, Interview, Rejected, Offer and can auto-create or update applications.
