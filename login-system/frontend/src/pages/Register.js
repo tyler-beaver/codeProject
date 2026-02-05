@@ -199,7 +199,7 @@ function Register() {
             </form>
             <p style={styles.footer}>
               Already have an account?{" "}
-              <a href="/login" style={styles.link}>
+              <a href="/codeProject/#/login" style={styles.link}>
                 Sign in
               </a>
             </p>
