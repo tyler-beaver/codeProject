@@ -255,18 +255,86 @@ function scoreEmailStatus({ text, domain, attachments }) {
     { re: /thank you for your interest/, w: 0.4 },
     { re: /we wish you the best/, w: 0.5 },
   ].forEach(({ re, w }) => { if (re.test(t)) scores.Rejected += w; });
-  // ...existing code...
-  // After scoring, pick the highest status and its confidence
+  // Offer
+  [
+    { re: /offer/, w: 1.0 },
+    { re: /pleased to offer you the position/, w: 1.0 },
+    { re: /extend(ing)? an offer/, w: 1.0 },
+    { re: /offer letter/, w: 0.9 },
+    { re: /compensation/, w: 0.5 },
+    { re: /start date/, w: 0.7 },
+    { re: /welcome to/, w: 0.6 },
+    { re: /we are delighted to extend an offer/, w: 1.0 },
+    { re: /please find your offer letter attached/, w: 1.0 },
+  ].forEach(({ re, w }) => { if (re.test(t)) scores.Offer += w; });
+  // Domain boost (ATS domains imply Applied/Interview emails)
+  if (domain && JOB_PROVIDER_DOMAINS.some((d) => domain.includes(d))) {
+    scores.Applied += 0.1;
+    scores.Interview += 0.1;
+  }
+  // Attachment boost for Offer (PDF likely offer letter)
+  if ((attachments || []).some((mt) => mt.includes("application/pdf"))) {
+    scores.Offer += 0.2;
+  }
+  // Pick best
   let status = null;
   let confidence = 0;
-  for (const key of Object.keys(scores)) {
-    if (scores[key] > confidence) {
-      status = key;
-      confidence = scores[key];
-    }
-  }
+  Object.entries(scores).forEach(([k, v]) => {
+    if (v > confidence) { confidence = v; status = k; }
+  });
   return { status, confidence };
 }
+
+const JOB_PROVIDER_DOMAINS = [
+  "indeed.com",
+  "linkedin.com",
+  "icims.com",
+  "workday.com",
+  "greenhouse.io",
+  "greenhousemail.io",
+  "lever.co",
+  "smartrecruiters.com",
+  "workable.com",
+  "jobvite.com",
+  "hackertrail.com",
+  "eightfold.ai",
+  "successfactors.com",
+  "myworkday.com",
+  "oraclecloud.com",
+];
+
+const NEGATIVE_TERMS = [
+  "newsletter",
+  "digest",
+  "blog",
+  "promo",
+  "promotion",
+  "marketing",
+  "password",
+  "reset your password",
+  "2fa",
+  "notification",
+  "receipt",
+  "invoice",
+  "order",
+  "tracking",
+  "shipment",
+  "ticket",
+  "issue",
+  "downtime",
+  "incident",
+  // Social/network noise
+  "viewed your profile",
+  "accepted your invitation",
+  "invitation",
+  "invite",
+  "connection",
+  "follower",
+  "follow",
+  "like",
+  "comment",
+];
+
 function getDomainFromFromHeader(fromHeader) {
   const lower = (fromHeader || "").toLowerCase();
   const domainMatch = lower.match(/@([a-z0-9.-]+)\b/);
