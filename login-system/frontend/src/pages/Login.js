@@ -265,7 +265,7 @@ function Login({ setToken }) {
             )}
             <p style={styles.footer}>
               Don't have an account?{" "}
-              <a href="/codeProject/#/register" style={styles.link}>
+              <a href="/register" style={styles.link}>
                 Create one
               </a>
             </p>
