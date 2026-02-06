@@ -10,7 +10,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
 
-      const backend = "https://tyler-beaver.onrender.com"; // your backend
+      const backend = "https://codeproject-1dnl.onrender.com"; // your backend
       const apiUrl = `${backend}/api/applications/user/${userId}`;
 
       const jobData = message.payload.fields;
