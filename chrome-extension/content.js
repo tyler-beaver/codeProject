@@ -1,3 +1,4 @@
+alert("Job Tracker content script injected!");
 function extractFormData(form) {
   const data = new FormData(form);
   const fields = {};
