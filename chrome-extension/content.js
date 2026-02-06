@@ -45,9 +45,7 @@ document.addEventListener(
   "submit",
   (event) => {
     const form = event.target;
-
     if (!(form instanceof HTMLFormElement)) return;
-    if (!detectJobApplication(form)) return;
 
     const payload = {
       url: window.location.href,
@@ -61,7 +59,7 @@ document.addEventListener(
       payload
     });
 
-    console.log("Job application captured:", payload);
+    console.log("Form submitted and captured:", payload);
   },
   true // capture phase is important
 );
