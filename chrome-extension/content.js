@@ -1,22 +1,75 @@
-// This content script listens for form submissions and auto-fills the dashboard field instead of the email field.
+function extractFormData(form) {
+  const data = new FormData(form);
+  const fields = {};
 
-document.addEventListener('DOMContentLoaded', function () {
-  // Adjust selectors as needed for your actual dashboard and submit button
-  const form = document.querySelector('form');
-  if (!form) return;
+  for (const [key, value] of data.entries()) {
+    if (typeof value === "string" && value.trim() !== "") {
+      fields[key] = value;
+    }
+  }
 
-  const dashboardInput = document.querySelector('input[name="dashboard"], #dashboard');
-  const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+  return fields;
+}
 
-  if (!dashboardInput || !submitBtn) return;
+function detectJobApplication(form) {
+  const text = form.innerText.toLowerCase();
 
-  submitBtn.addEventListener('click', function (e) {
-    // Prevent default if you want to control submission
-    // e.preventDefault();
-    // Fill the dashboard field with a sample value
-    dashboardInput.value = 'AutoFilledDashboardValue';
-    // Optionally, trigger input/change events if needed by the site
-    dashboardInput.dispatchEvent(new Event('input', { bubbles: true }));
-    dashboardInput.dispatchEvent(new Event('change', { bubbles: true }));
-  }, false);
-});
+  const keywords = [
+    "apply",
+    "application",
+    "resume",
+    "cover letter",
+    "submit application"
+  ];
+
+  return keywords.some(word => text.includes(word));
+}
+
+document.addEventListener(
+  "submit",
+  (event) => {
+    const form = event.target;
+
+    if (!(form instanceof HTMLFormElement)) return;
+    if (!detectJobApplication(form)) return;
+
+    const payload = {
+      url: window.location.href,
+      title: document.title,
+      timestamp: new Date().toISOString(),
+      fields: extractFormData(form)
+    };
+
+    chrome.runtime.sendMessage({
+      type: "JOB_APPLICATION_DETECTED",
+      payload
+    });
+
+    console.log("Job application captured:", payload);
+  },
+  true // capture phase is important
+);
+
+
+
+// Optional: intercept fetch for AJAX-heavy apps
+const originalFetch = window.fetch;
+
+window.fetch = async (...args) => {
+  const response = await originalFetch(...args);
+
+  const url = args[0]?.toString() || "";
+
+  if (url.toLowerCase().includes("apply")) {
+    chrome.runtime.sendMessage({
+      type: "POSSIBLE_JOB_APPLICATION",
+      payload: {
+        url: window.location.href,
+        networkRequest: url,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+
+  return response;
+};

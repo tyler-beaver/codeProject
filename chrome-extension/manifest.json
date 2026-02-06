@@ -1,18 +1,24 @@
 {
   "manifest_version": 3,
-  "name": "Dashboard Auto-Fill",
+  "name": "Job Tracker Auto Logger",
   "version": "1.0",
-  "description": "Auto-fills the dashboard field on submit instead of the email field.",
-  "permissions": ["scripting", "activeTab"],
+  "description": "Automatically logs job applications to dashboard",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
       {
         "matches": ["https://tyler-beaver.github.io/codeProject/*"],
-        "js": ["content.js"]
+        "js": ["content.js"],
+        "run_at": "document_start"
       }
-  ],
-  "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
-  }
+  ]
 }
