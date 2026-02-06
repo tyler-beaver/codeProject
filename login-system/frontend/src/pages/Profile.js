@@ -338,44 +338,7 @@ function Profile() {
                 </span>
               </div>
             </div>
-            <div style={{ marginTop: 24, textAlign: "center" }}>
-              <div style={{ marginBottom: 8, color: "#0f172a", fontWeight: 600, fontSize: "1.08rem" }}>
-                Chrome Extension Instructions
-              </div>
-              <ol style={{ textAlign: "left", maxWidth: 420, margin: "0 auto 16px auto", color: "#475569", fontSize: "0.98rem" }}>
-                <li>Click the button below to download <b>chrome-extension.zip</b>.</li>
-                <li>Unzip the file to a folder on your computer.</li>
-                <li>Open <b>chrome://extensions/</b> in Chrome.</li>
-                <li>Enable <b>Developer mode</b> (top right).</li>
-                <li>Click <b>Load unpacked</b> and select the unzipped folder.</li>
-                <li>The extension will now work automatically on supported pages.</li>
-              </ol>
-              <a
-                href={
-                  process.env.PUBLIC_URL
-                    ? process.env.PUBLIC_URL + "/../chrome-extension.zip"
-                    : "/chrome-extension.zip"
-                }
-                download
-                style={{
-                  display: "inline-block",
-                  background: "#2563eb",
-                  color: "#fff",
-                  borderRadius: 8,
-                  padding: "10px 24px",
-                  fontWeight: 700,
-                  textDecoration: "none",
-                  fontSize: "1.08rem",
-                  boxShadow: "0 2px 8px 0 rgba(59,130,246,0.10)",
-                  marginTop: 8,
-                }}
-              >
-                Download Chrome Extension
-              </a>
-              <div style={{ fontSize: "0.95rem", color: "#64748b", marginTop: 6 }}>
-                (Unzip and load in Chrome extensions page)
-              </div>
-            </div>
+            {/* Chrome Extension instructions and download link removed as requested */}
           </>
         ) : null}
       </div>
