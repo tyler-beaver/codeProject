@@ -11,9 +11,26 @@ function extractFormData(form) {
   return fields;
 }
 
-function detectJobApplication(form) {
-  const text = form.innerText.toLowerCase();
 
+// Improved detection: check visible text, input placeholders, and try shadow DOM
+function detectJobApplication(form) {
+  let text = "";
+  try {
+    text = (form.innerText || "").toLowerCase();
+  } catch {}
+  // Check input placeholders and labels
+  const inputs = form.querySelectorAll('input,textarea,select,label');
+  for (const el of inputs) {
+    if (el.placeholder && el.placeholder.toLowerCase().match(/apply|application|resume|cover letter/)) return true;
+    if (el.innerText && el.innerText.toLowerCase().match(/apply|application|resume|cover letter/)) return true;
+    if (el.name && el.name.toLowerCase().match(/apply|application|resume|cover letter/)) return true;
+  }
+  // Try shadow DOM (best effort)
+  if (form.shadowRoot) {
+    const shadowText = (form.shadowRoot.innerText || "").toLowerCase();
+    if (shadowText.match(/apply|application|resume|cover letter/)) return true;
+  }
+  // Fallback: visible text
   const keywords = [
     "apply",
     "application",
@@ -21,7 +38,6 @@ function detectJobApplication(form) {
     "cover letter",
     "submit application"
   ];
-
   return keywords.some(word => text.includes(word));
 }
 

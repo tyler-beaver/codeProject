@@ -1,17 +1,17 @@
-chrome.runtime.onMessage.addListener(async (message, sender) => {
-  if (message.type === "JOB_APPLICATION_DETECTED") {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type !== "JOB_APPLICATION_DETECTED") return;
+
+  (async () => {
     try {
-      // Try to get userId from localStorage or prompt
-      let userId = localStorage.getItem("supabaseUserId");
+      // Use chrome.storage.local for MV3 background
+      const { supabaseUserId: userId } = await chrome.storage.local.get("supabaseUserId");
       if (!userId) {
-        userId = prompt("Enter your user ID for job tracking:");
-        if (userId) localStorage.setItem("supabaseUserId", userId);
+        console.warn("No user ID stored");
+        return;
       }
-      if (!userId) return;
-      const backend = "https://tyler-beaver.onrender.com"; // Replace with your Render backend URL
+      const backend = "https://tyler-beaver.onrender.com";
       const apiUrl = `${backend}/api/applications/user/${userId}`;
       const jobData = message.payload.fields;
-      // Only send required fields
       const payload = {
         name: jobData.company || jobData.name || "",
         description: jobData.position || jobData.description || "",
@@ -20,14 +20,14 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
       };
       const response = await fetch(apiUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
       console.log("Sent to dashboard:", response.status);
     } catch (error) {
       console.error("Failed to send job data:", error);
     }
-  }
+  })();
+
+  return true; // keep async alive for MV3
 });
