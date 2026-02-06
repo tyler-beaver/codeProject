@@ -1,3 +1,12 @@
+// Attempt to set supabaseUserId automatically if available
+try {
+  if (window.user && window.user.id) {
+    chrome.storage.local.set({ supabaseUserId: window.user.id });
+    console.log('[JobTracker] Set supabaseUserId from window.user.id:', window.user.id);
+  }
+} catch (e) {
+  console.warn('[JobTracker] Could not set supabaseUserId automatically:', e);
+}
 console.log("✅ Job Tracker content script loaded");
 
 // Extract all non-empty form fields
