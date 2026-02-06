@@ -338,6 +338,33 @@ function Profile() {
                 </span>
               </div>
             </div>
+            <div style={{ marginTop: 24, textAlign: "center" }}>
+              <a
+                href={
+                  process.env.PUBLIC_URL
+                    ? process.env.PUBLIC_URL + "/../chrome-extension.zip"
+                    : "/chrome-extension.zip"
+                }
+                download
+                style={{
+                  display: "inline-block",
+                  background: "#2563eb",
+                  color: "#fff",
+                  borderRadius: 8,
+                  padding: "10px 24px",
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  fontSize: "1.08rem",
+                  boxShadow: "0 2px 8px 0 rgba(59,130,246,0.10)",
+                  marginTop: 8,
+                }}
+              >
+                Download Chrome Extension
+              </a>
+              <div style={{ fontSize: "0.95rem", color: "#64748b", marginTop: 6 }}>
+                (Unzip and load in Chrome extensions page)
+              </div>
+            </div>
           </>
         ) : null}
       </div>
