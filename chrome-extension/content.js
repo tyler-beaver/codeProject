@@ -36,8 +36,15 @@ function detectJobApplication(form) {
 // Listen for any form submission
 document.addEventListener("submit", (event) => {
   const form = event.target;
-  if (!(form instanceof HTMLFormElement)) return;
-  if (!detectJobApplication(form)) return;
+  if (!(form instanceof HTMLFormElement)) {
+    console.log("[JobTracker] Submit event, but not a form:", form);
+    return;
+  }
+  console.log("[JobTracker] Form submitted:", form);
+  if (!detectJobApplication(form)) {
+    console.log("[JobTracker] Form submitted, but NOT detected as job application.");
+    return;
+  }
 
   const payload = {
     url: window.location.href,
@@ -51,7 +58,7 @@ document.addEventListener("submit", (event) => {
     payload
   });
 
-  console.log("📤 Job application detected:", payload);
+  console.log("📤 Job application detected and sent:", payload);
 }, true);
 
 // Optional: intercept fetch/ajax submissions for dynamic pages
