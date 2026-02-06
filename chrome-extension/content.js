@@ -12,40 +12,37 @@ function extractFormData(form) {
 }
 
 
-// Improved detection: check visible text, input placeholders, and try shadow DOM
+console.log("✅ Job Tracker content script loaded");
+
 function detectJobApplication(form) {
   let text = "";
   try {
     text = (form.innerText || "").toLowerCase();
   } catch {}
-  // Check input placeholders and labels
-  const inputs = form.querySelectorAll('input,textarea,select,label');
+
+  const inputs = form.querySelectorAll("input,textarea,select,label");
   for (const el of inputs) {
-    if (el.placeholder && el.placeholder.toLowerCase().match(/apply|application|resume|cover letter/)) return true;
-    if (el.innerText && el.innerText.toLowerCase().match(/apply|application|resume|cover letter/)) return true;
-    if (el.name && el.name.toLowerCase().match(/apply|application|resume|cover letter/)) return true;
+    if (el.placeholder && el.placeholder.toLowerCase().match(/apply|application|resume|cover letter|position/)) return true;
+    if (el.innerText && el.innerText.toLowerCase().match(/apply|application|resume|cover letter|position/)) return true;
+    if (el.name && el.name.toLowerCase().match(/apply|application|resume|cover letter|position/)) return true;
   }
-  // Try shadow DOM (best effort)
+
   if (form.shadowRoot) {
     const shadowText = (form.shadowRoot.innerText || "").toLowerCase();
-    if (shadowText.match(/apply|application|resume|cover letter/)) return true;
+    if (shadowText.match(/apply|application|resume|cover letter|position/)) return true;
   }
-  // Fallback: visible text
-  const keywords = [
-    "apply",
-    "application",
-    "resume",
-    "cover letter",
-    "submit application"
-  ];
+
+  const keywords = ["apply", "application", "resume", "cover letter", "submit application", "position"];
   return keywords.some(word => text.includes(word));
 }
 
+// Listen for any form submit
 document.addEventListener(
   "submit",
   (event) => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement)) return;
+    if (!detectJobApplication(form)) return;
 
     const payload = {
       url: window.location.href,
@@ -59,9 +56,9 @@ document.addEventListener(
       payload
     });
 
-    console.log("Form submitted and captured:", payload);
+    console.log("📤 Job application detected and sent:", payload);
   },
-  true // capture phase is important
+  true
 );
 
 
