@@ -1,9 +1,17 @@
 {
   "manifest_version": 3,
-  "name": "Job Tracker Test Logger",
+  "name": "Job Tracker Auto Logger",
   "version": "1.0",
-  "permissions": ["storage", "activeTab", "scripting"],
-  "host_permissions": ["https://*/*", "http://*/*"],
+  "description": "Automatically logs job applications to dashboard",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
