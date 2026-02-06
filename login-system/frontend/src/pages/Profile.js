@@ -339,6 +339,17 @@ function Profile() {
               </div>
             </div>
             <div style={{ marginTop: 24, textAlign: "center" }}>
+              <div style={{ marginBottom: 8, color: "#0f172a", fontWeight: 600, fontSize: "1.08rem" }}>
+                Chrome Extension Instructions
+              </div>
+              <ol style={{ textAlign: "left", maxWidth: 420, margin: "0 auto 16px auto", color: "#475569", fontSize: "0.98rem" }}>
+                <li>Click the button below to download <b>chrome-extension.zip</b>.</li>
+                <li>Unzip the file to a folder on your computer.</li>
+                <li>Open <b>chrome://extensions/</b> in Chrome.</li>
+                <li>Enable <b>Developer mode</b> (top right).</li>
+                <li>Click <b>Load unpacked</b> and select the unzipped folder.</li>
+                <li>The extension will now work automatically on supported pages.</li>
+              </ol>
               <a
                 href={
                   process.env.PUBLIC_URL
