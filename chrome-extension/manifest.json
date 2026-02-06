@@ -5,10 +5,10 @@
   "description": "Auto-fills the dashboard field on submit instead of the email field.",
   "permissions": ["scripting", "activeTab"],
   "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
-    }
+      {
+        "matches": ["https://tyler-beaver.github.io/codeProject/*"],
+        "js": ["content.js"]
+      }
   ],
   "icons": {
     "16": "icon16.png",
