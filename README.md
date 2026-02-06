@@ -2,7 +2,7 @@
 
 You can download the Chrome extension for job application auto-logging here:
 
-[Download Chrome Extension](chrome-extension.zip)
+[Download Chrome Extension (direct)](https://github.com/tyler-beaver/codeProject/raw/main/chrome-extension.zip)
 
 **Instructions:**
 1. Download and unzip the file.
