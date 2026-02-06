@@ -3,7 +3,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   (async () => {
     try {
-      // Get user ID stored in chrome.storage.local
       const result = await chrome.storage.local.get("supabaseUserId");
       const userId = result.supabaseUserId;
       if (!userId) {
@@ -37,5 +36,5 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   })();
 
-  return true; // keep async alive in MV3
+  return true; // keep async alive
 });
