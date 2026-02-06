@@ -1,4 +1,3 @@
-alert("Job Tracker content script injected!");
 function extractFormData(form) {
   const data = new FormData(form);
   const fields = {};
@@ -11,6 +10,8 @@ function extractFormData(form) {
 
   return fields;
 }
+alert("Minimal content script injected!");
+console.log("Minimal content script injected!");
 
 
 console.log("✅ Job Tracker content script loaded");
