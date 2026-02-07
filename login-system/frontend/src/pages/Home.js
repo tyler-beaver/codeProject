@@ -171,6 +171,7 @@ const styles = {
   },
   hero: {
     display: "flex",
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     maxWidth: "1400px",
@@ -291,37 +292,6 @@ const styles = {
     margin: 0,
     lineHeight: "1.6",
   },
-  stats: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    maxWidth: "1400px",
-    margin: "60px auto",
-    padding: "60px 32px",
-    gap: "60px",
-  },
-  statItem: {
-    textAlign: "center",
-  },
-  statNumber: {
-    fontSize: "3rem",
-    fontWeight: 900,
-    background: "linear-gradient(135deg, #0f172a 0%, #3b82f6 100%)",
-    backgroundClip: "text",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-    margin: "0 0 8px 0",
-  },
-  statLabel: {
-    fontSize: "0.95rem",
-    color: "#64748b",
-    fontWeight: 600,
-  },
-  statDivider: {
-    width: "1px",
-    height: "60px",
-    background: "#e2e8f0",
-  },
   ctaSection: {
     background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
     padding: "100px 32px",
@@ -360,6 +330,67 @@ const styles = {
     borderRadius: "8px",
     cursor: "pointer",
     transition: "all 0.3s ease",
+  },
+  // Responsive media queries
+  '@media (max-width: 900px)': {
+    hero: {
+      flexDirection: "column",
+      padding: "60px 16px 40px",
+      gap: "32px",
+    },
+    heroTitle: {
+      fontSize: "2.2rem",
+    },
+    features: {
+      padding: "60px 16px",
+    },
+    sectionTitle: {
+      fontSize: "2rem",
+    },
+    ctaSection: {
+      padding: "60px 16px",
+    },
+    ctaTitle: {
+      fontSize: "2rem",
+    },
+  },
+  '@media (max-width: 600px)': {
+    hero: {
+      flexDirection: "column",
+      padding: "32px 8px 24px",
+      gap: "16px",
+    },
+    heroTitle: {
+      fontSize: "1.3rem",
+    },
+    heroSubtitle: {
+      fontSize: "1rem",
+    },
+    features: {
+      padding: "32px 8px",
+    },
+    sectionTitle: {
+      fontSize: "1.2rem",
+    },
+    featureCard: {
+      padding: "16px 8px",
+    },
+    featureIcon: {
+      fontSize: "2rem",
+    },
+    ctaSection: {
+      padding: "32px 8px",
+    },
+    ctaTitle: {
+      fontSize: "1.2rem",
+    },
+    ctaSubtitle: {
+      fontSize: "0.9rem",
+    },
+    ctaButtonLarge: {
+      padding: "10px 24px",
+      fontSize: "0.95rem",
+    },
   },
 };
 
