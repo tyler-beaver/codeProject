@@ -73,7 +73,6 @@ function Dashboard() {
           interview_time: app.interview_time || "",
         })));
       }
-      }
     } catch (e) {
     } finally {
       setSyncing(false);
