@@ -1032,6 +1032,7 @@ function JobForm({ onClose, onAdd, userId }) {
     interview_date: "",
     interview_time: "",
   });
+  const [submitting, setSubmitting] = useState(false); // Fix: define submitting state
   const handleChange = (e) => {
     setFormData({
       ...formData,
