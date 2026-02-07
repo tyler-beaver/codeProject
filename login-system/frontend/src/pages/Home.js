@@ -126,7 +126,7 @@ function Home({ token }) {
             </p>
           </div>
           <div style={styles.featureCard}>
-            <div style={styles.featureIcon}>�</div>
+            <div style={styles.featureIcon}>🔔</div>
             <h3 style={styles.featureTitle}>Never Miss a Beat</h3>
             <p style={styles.featureDesc}>
               Smart reminders keep you on top of every opportunity.
