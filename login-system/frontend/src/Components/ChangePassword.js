@@ -6,7 +6,6 @@ function ChangePassword({ onClose, onSuccess }) {
   // Remove oldPassword, only need new password and confirm
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [message, setMessage] = useState("");
