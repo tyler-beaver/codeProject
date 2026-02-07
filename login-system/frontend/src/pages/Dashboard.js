@@ -35,23 +35,14 @@ function Dashboard() {
   };
 
   // Add missing state hooks
-  const [setLoading, setSetLoading] = useState(false); // Fix: setLoading
-  const [setSubmitting, setSetSubmitting] = useState(false); // Fix: setSubmitting
+  const [loading, setLoading] = useState(false); // Fix: loading
+  const [submitting, setSubmitting] = useState(false); // Fix: submitting
 
   // Fix 'data' usage in getUser
-  // If you have a user context or prop, use that instead
-  // Example: Replace 'data?.user' with 'supabase.auth.user()' or similar
   useEffect(() => {
     async function getUser() {
       const user = supabase.auth.user && typeof supabase.auth.user === 'function' ? supabase.auth.user() : null;
       if (user) setUserId(user.id);
-    }
-    getUser();
-  }, []);
-
-  useEffect(() => {
-    async function getUser() {
-      if (data?.user) setUserId(data.user.id);
     }
     getUser();
   }, []);
