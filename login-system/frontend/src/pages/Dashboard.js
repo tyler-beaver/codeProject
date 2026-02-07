@@ -55,10 +55,12 @@ function Dashboard() {
         updated: data.updated || 0,
       });
       // Trigger a refresh of jobs
+      const { data: refreshed, error } = await supabase
         .from("applications")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
+      if (!error && refreshed) {
         setJobs(refreshed.map((app) => ({
           id: app.id,
           company: app.name,
@@ -70,6 +72,7 @@ function Dashboard() {
           interview_date: app.interview_date || "",
           interview_time: app.interview_time || "",
         })));
+      }
       }
     } catch (e) {
     } finally {
