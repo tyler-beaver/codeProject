@@ -115,23 +115,6 @@ function Navbar({ token, setToken }) {
   );
 }
 
-const styles = {
-  navbar: {
-    background:
-      "linear-gradient(90deg,rgba(59,130,246,0.07) 0%,rgba(255,255,255,0.97) 100%)",
-    borderBottom: "1px solid #e5e7eb",
-    height: "70px",
-    display: "flex",
-    alignItems: "center",
-    position: "sticky",
-    top: 0,
-    zIndex: 100,
-    boxShadow: "0 4px 16px 0 rgba(59,130,246,0.10)",
-    borderRadius: "0 0 18px 18px",
-    backdropFilter: "blur(6px)",
-    transition: "box-shadow 0.2s",
-  },
-  avatar: {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",

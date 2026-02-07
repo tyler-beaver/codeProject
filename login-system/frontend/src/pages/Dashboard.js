@@ -10,7 +10,6 @@ function Dashboard() {
   const [jobs, setJobs] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [expandedJob, setExpandedJob] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null);
   const [deleteJobId, setDeleteJobId] = useState(null);
   const [editJobId, setEditJobId] = useState(null);
@@ -37,7 +36,6 @@ function Dashboard() {
 
   useEffect(() => {
     async function getUser() {
-      const { data, error } = await supabase.auth.getUser();
       if (data?.user) setUserId(data.user.id);
     }
     getUser();
@@ -57,12 +55,10 @@ function Dashboard() {
         updated: data.updated || 0,
       });
       // Trigger a refresh of jobs
-      const { data: refreshed, error } = await supabase
         .from("applications")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
-      if (!error && refreshed) {
         setJobs(refreshed.map((app) => ({
           id: app.id,
           company: app.name,
@@ -76,7 +72,6 @@ function Dashboard() {
         })));
       }
     } catch (e) {
-      console.error("Sync emails error", e);
     } finally {
       setSyncing(false);
     }
@@ -1029,7 +1024,6 @@ function JobForm({ onClose, onAdd, userId }) {
     interview_date: "",
     interview_time: "",
   });
-  const [submitting, setSubmitting] = useState(false);
   const handleChange = (e) => {
     setFormData({
       ...formData,
