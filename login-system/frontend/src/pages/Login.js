@@ -313,8 +313,8 @@ const styles = {
     background: "#fff",
     borderRadius: "20px",
     boxShadow: "0 8px 32px 0 rgba(59,130,246,0.13)",
-    padding: "56px 64px 48px 64px",
-    minWidth: "520px",
+      padding: "40px 16px 32px 16px",
+      minWidth: "0",
     maxWidth: "99vw",
     display: "flex",
     flexDirection: "column",
@@ -386,9 +386,9 @@ const styles = {
     marginBottom: "8px",
   },
   input: {
-    width: "380px",
+     width: "100%",
     maxWidth: "100%",
-    padding: "16px 18px",
+     padding: "12px 10px",
     fontSize: "1.08rem",
     border: "1.5px solid #cbd5e1",
     borderRadius: "10px",
@@ -409,8 +409,8 @@ const styles = {
     border: "1px solid #fecaca",
   },
   button: {
-    width: "100%",
-    padding: "14px 0",
+     width: "100%",
+     padding: "12px 0",
     fontSize: "1.08rem",
     fontWeight: 700,
     background: "linear-gradient(90deg,#2563eb,#3b82f6)",
@@ -422,6 +422,49 @@ const styles = {
     transition: "all 0.2s",
     marginTop: "8px",
   },
+    // Responsive media queries
+    '@media (max-width: 900px)': {
+      overlayCard: {
+        padding: "32px 8px 24px 8px",
+        minWidth: "0",
+        maxWidth: "95vw",
+      },
+      input: {
+        fontSize: "1rem",
+        padding: "10px 8px",
+      },
+      button: {
+        fontSize: "1rem",
+        padding: "10px 0",
+      },
+      title: {
+        fontSize: "1.3rem",
+      },
+      subtitle: {
+        fontSize: "0.9rem",
+      },
+    },
+    '@media (max-width: 600px)': {
+      overlayCard: {
+        padding: "16px 4px 12px 4px",
+        minWidth: "0",
+        maxWidth: "99vw",
+      },
+      input: {
+        fontSize: "0.95rem",
+        padding: "8px 6px",
+      },
+      button: {
+        fontSize: "0.95rem",
+        padding: "8px 0",
+      },
+      title: {
+        fontSize: "1rem",
+      },
+      subtitle: {
+        fontSize: "0.85rem",
+      },
+    },
   footer: {
     textAlign: "center",
     fontSize: "0.9rem",
