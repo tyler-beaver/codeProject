@@ -386,9 +386,9 @@ const styles = {
     marginBottom: "8px",
   },
   input: {
-     width: "100%",
+    width: "380px",
     maxWidth: "100%",
-     padding: "12px 10px",
+    padding: "16px 18px",
     fontSize: "1.08rem",
     border: "1.5px solid #cbd5e1",
     borderRadius: "10px",
@@ -409,8 +409,8 @@ const styles = {
     border: "1px solid #fecaca",
   },
   button: {
-     width: "100%",
-     padding: "12px 0",
+    width: "100%",
+    padding: "14px 0",
     fontSize: "1.08rem",
     fontWeight: 700,
     background: "linear-gradient(90deg,#2563eb,#3b82f6)",
